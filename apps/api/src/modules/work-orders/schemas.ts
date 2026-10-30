@@ -1,4 +1,4 @@
-import { CHECKLIST_RESULTS, WORK_ORDER_PRIORITIES, WORK_ORDER_STATES } from "@reparo360/domain";
+import { CHECKLIST_RESULTS, TRANSITION_ACTIONS, WORK_ORDER_PRIORITIES, WORK_ORDER_STATES } from "@reparo360/domain";
 import { z } from "zod";
 import { pagination } from "../shared/query.js";
 
@@ -33,6 +33,15 @@ export const assignTechnicianBody = z.strictObject({
   /** Versão da OS que o cliente viu; evita sobrescrever alteração concorrente. */
   version: z.number().int().min(1),
 });
+
+export const transitionBody = z.strictObject({
+  action: z.enum(TRANSITION_ACTIONS),
+  /** Versão da OS que o cliente viu. Duplo clique: a segunda chamada recebe 409. */
+  expectedVersion: z.number().int().min(1),
+  reason: z.string().trim().min(3).max(500).optional(),
+});
+
+export const claimBody = z.strictObject({ expectedVersion: z.number().int().min(1) });
 
 export const listWorkOrdersQuery = z.strictObject({
   state: z.enum(WORK_ORDER_STATES).optional(),

@@ -13,7 +13,9 @@ import { attachmentRoutes } from "./modules/attachments/attachments.routes.js";
 import { LocalDiskStorage, type FileStorage } from "./modules/attachments/storage.js";
 import { customerRoutes } from "./modules/customers/customers.routes.js";
 import { deviceRoutes } from "./modules/devices/devices.routes.js";
+import { diagnosticRoutes } from "./modules/diagnostics/diagnostics.js";
 import { documentRoutes } from "./modules/documents/documents.routes.js";
+import { quoteRoutes } from "./modules/quotes/quotes.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
@@ -98,5 +100,7 @@ export async function buildApp({ config, pool, storage, clock }: AppDeps): Promi
   await app.register(workOrderRoutes(deps), { prefix: "/api/v1" });
   await app.register(attachmentRoutes(deps), { prefix: "/api/v1" });
   await app.register(documentRoutes(deps), { prefix: "/api/v1" });
+  await app.register(diagnosticRoutes(deps), { prefix: "/api/v1" });
+  await app.register(quoteRoutes(deps), { prefix: "/api/v1" });
   return app;
 }

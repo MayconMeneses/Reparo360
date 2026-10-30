@@ -37,3 +37,17 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-22 | Novo | Varredura de arquivos órfãos (queda do processo entre gravar o arquivo e confirmar a transação) e política de retenção de anexos excluídos logicamente. |
 | P-23 | Novo | Remoção de EXIF/GPS das fotos e verificação de malware nos anexos (spec 22.3). Exige biblioteca de imagem; não implementado. |
 | P-24 | Novo | Conteúdo jurídico do comprovante (cláusulas, prazo de guarda do equipamento). Depende de P-05. O comprovante atual só registra o recebimento e informa que não é documento fiscal. |
+
+## Atualizações da Fase 3 (2026-10-30)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-03 | **Segue aberto. RF-013 (aprovação remota) BLOQUEADO** | Sem provedor de envio, o sistema não simula códigos. Só existe a aprovação **presencial**. O esquema aceita `channel = 'remoto'`, mas nada o grava. |
+| P-09 | **Decidido** (recomendação seguida) | Orçar sobre diagnóstico apenas "suspeita" exige `authorizeSuspicion` explícito; fica gravado quem autorizou (`suspicion_authorized_by`). Diagnóstico inconclusivo nunca sustenta orçamento. |
+| P-10 | **Decidido com desvio** | Padrões: proprietário sem limite, gerente até 10%, atendente e técnico 0%. A recomendação pedia valor **configurável por empresa**; hoje os limites são constantes no domínio (`maxDiscountPercent`). Configuração por empresa exige `tenant_settings` (pendente). |
+| P-11 | **Decidido** (recomendação seguida) | Validade padrão de 7 dias (1 a 30 no envio). Configuração por empresa pendente (mesmo motivo de P-10). |
+| P-12 | **Entregue** | Fila de OS recebidas e sem técnico (sem nome do cliente e sem o texto livre do defeito) + "assumir OS" com disputa resolvida por atualização condicional. |
+| P-13 | **Decidido** (recomendação seguida) | Técnico cria e edita **rascunho**; enviar, revisar e decidir ficam com atendente/gerente/proprietário. |
+| P-25 | Novo | Agendador da expiração automática de orçamentos. Hoje a expiração ocorre na tentativa de decisão ou por `POST /quotes/expire-due`. Sem agendador, um orçamento vencido sem ninguém tocar continua `enviado` e a OS em `AGUARDANDO_APROVACAO`. |
+| P-26 | Novo | Quantidade de item só inteira (sem horas fracionadas). Confirmar se a mão de obra por hora fracionada é necessária. |
+| P-27 | Novo | Versão do orçamento para o consumidor (PDF "orçamento" e "registro de aprovação") e elementos exigidos pelo CDC dependem de P-05 (revisão jurídica). |

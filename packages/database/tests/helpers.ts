@@ -84,3 +84,14 @@ export async function resetAndSeed(migrator: pg.Pool): Promise<Fixture> {
   }
   return f;
 }
+
+/** Código SQLSTATE do erro do PostgreSQL (o Drizzle o embrulha em `cause`). Undefined = sucesso. */
+export async function sqlState(run: Promise<unknown>): Promise<string | undefined> {
+  try {
+    await run;
+    return undefined;
+  } catch (error) {
+    const e = error as { code?: string; cause?: { code?: string } };
+    return e.cause?.code ?? e.code;
+  }
+}

@@ -29,6 +29,20 @@
       "when": 1793383005833,
       "tag": "0003_rls_fase2",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793384693683,
+      "tag": "0004_fase3_tabelas",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793384706623,
+      "tag": "0005_rls_e_gatilhos_fase3",
+      "breakpoints": true
     }
   ]
 }

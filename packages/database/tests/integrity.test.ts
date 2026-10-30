@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { schema, withContext, type Db } from "../src/index.js";
-import { openPools, resetAndSeed, type Fixture, type Pools } from "./helpers.js";
+import { openPools, resetAndSeed, sqlState, type Fixture, type Pools } from "./helpers.js";
 
 let pools: Pools;
 let f: Fixture;
@@ -18,16 +18,6 @@ const ids = {
   attachmentA: randomUUID(),
 };
 
-/** Código SQLSTATE do erro do PostgreSQL (o Drizzle o embrulha em `cause`). */
-async function sqlState(run: Promise<unknown>): Promise<string | undefined> {
-  try {
-    await run;
-    return undefined;
-  } catch (error) {
-    const e = error as { code?: string; cause?: { code?: string } };
-    return e.cause?.code ?? e.code;
-  }
-}
 
 const customer = (tenantId: string, id: string) => ({ id, tenantId, name: "Cliente Sintético", phone: "85999990000" });
 const device = (tenantId: string, customerId: string, id: string) => ({

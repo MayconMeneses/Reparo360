@@ -23,6 +23,14 @@ export const PERMISSIONS = [
   "attachment.read",
   "attachment.delete",
   "document.generate",
+  "work_order.transition",
+  "work_order.claim",
+  "diagnostic.write",
+  "quote.create",
+  "quote.read",
+  "quote.submit",
+  "quote.manage",
+  "quote.decision.in_person",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -41,6 +49,8 @@ const FRONT_DESK: readonly Permission[] = [
   "document.generate",
 ];
 
+const QUOTING: readonly Permission[] = ["quote.create", "quote.read", "quote.submit", "quote.manage", "quote.decision.in_person"];
+
 const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
   proprietario: new Set<Permission>(PERMISSIONS),
   // Gerente: equipe com restrições (ver canManageMember) e configuração operacional.
@@ -49,12 +59,26 @@ const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
     "tenant.settings.write",
     "audit.read",
     ...FRONT_DESK,
+    ...QUOTING,
     "work_order.assign",
+    "work_order.transition",
+    "diagnostic.write",
     "attachment.delete",
   ]),
-  atendente: new Set<Permission>(FRONT_DESK),
-  // Técnico: só o que se liga a OS atribuídas; o recorte por atribuição é feito no serviço.
-  tecnico: new Set<Permission>(["work_order.read", "attachment.upload", "attachment.read"]),
+  // Atendente orça e registra a decisão presencial; não muda estados diretamente.
+  atendente: new Set<Permission>([...FRONT_DESK, ...QUOTING]),
+  // Técnico: só o que se liga a OS atribuídas (recorte feito no serviço). Orça apenas em rascunho (P-13):
+  // enviar, revisar e decidir ficam com atendente/gerente/proprietário.
+  tecnico: new Set<Permission>([
+    "work_order.read",
+    "work_order.transition",
+    "work_order.claim",
+    "diagnostic.write",
+    "quote.create",
+    "quote.read",
+    "attachment.upload",
+    "attachment.read",
+  ]),
 };
 
 export function hasPermission(role: TenantRole, permission: Permission): boolean {

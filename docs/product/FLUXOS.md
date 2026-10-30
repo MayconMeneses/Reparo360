@@ -1,61 +1,78 @@
 # Fluxos e máquina de estados da OS
 
+> A tabela abaixo é a mesma de `packages/domain/src/state-machine.ts`. Alterar uma exige alterar a outra no mesmo commit (há teste de consistência no domínio).
+
 ## Estados
 
 `RECEBIDA`, `EM_DIAGNOSTICO`, `AGUARDANDO_APROVACAO`, `AGUARDANDO_PECA`, `EM_REPARO`, `EM_TESTE`, `PRONTA_RETIRADA`, `PRONTA_RETIRADA_SEM_REPARO`, `ENTREGUE`, `ENCERRADA`, `CANCELADA`.
 
 Terminais: `ENCERRADA`, `CANCELADA`. `ENTREGUE` só avança para `ENCERRADA`.
 
-Papéis: P = proprietário, G = gerente, A = atendente, T = técnico (T atribuído à OS), S = sistema (job). P e G têm tudo que A e T têm, exceto onde indicado.
+Papéis: P = proprietário, G = gerente, A = atendente, T = técnico (T atribuído à OS), S = sistema (expiração). P e G têm o que A e T têm, exceto onde indicado.
+
+Modo: **direto** = endpoint genérico `POST /work-orders/:id/transitions`; **orçamento** = efeito do ciclo do orçamento (endpoints de orçamento); **fase 4** = depende de reparo/testes/entrega, ainda não exposto.
 
 ## Matriz de transições
 
-| # | De | Ação | Para | Papéis | Condições | Evento | Reversível |
+| # | Ação | De | Para | Papéis | Condições | Evento | Modo |
 |---|---|---|---|---|---|---|---|
-| 1 | RECEBIDA | iniciar_diagnostico | EM_DIAGNOSTICO | T, G, P | técnico atribuído | `diagnostico_iniciado` | não |
-| 2 | RECEBIDA | cancelar | CANCELADA | G, P | motivo | `os_cancelada` | não |
-| 3 | EM_DIAGNOSTICO | enviar_orcamento | AGUARDANDO_APROVACAO | A, G, P | diagnóstico válido (RN-020) e orçamento `enviado` | `orcamento_enviado` | via 9 |
-| 4 | EM_DIAGNOSTICO | liberar_sem_reparo | PRONTA_RETIRADA_SEM_REPARO | T, G, P | diagnóstico inconclusivo ou reparo impossível; motivo | `liberada_sem_reparo` | via 19 |
-| 5 | EM_DIAGNOSTICO | cancelar | CANCELADA | G, P | motivo | `os_cancelada` | não |
-| 6 | AGUARDANDO_APROVACAO | aprovar_orcamento | EM_REPARO | S (decisão), A/G/P (presencial) | decisão `aprovado` na versão vigente; sem peça pendente | `orcamento_aprovado` | não |
-| 7 | AGUARDANDO_APROVACAO | aprovar_orcamento | AGUARDANDO_PECA | idem 6 | decisão `aprovado`; peça indisponível informada | `orcamento_aprovado`, `aguardando_peca` | não |
-| 8 | AGUARDANDO_APROVACAO | recusar / expirar | PRONTA_RETIRADA_SEM_REPARO | S, A, G, P | decisão `recusado` ou orçamento `expirado` | `orcamento_recusado` ou `orcamento_expirado` | via 19 |
-| 9 | AGUARDANDO_APROVACAO | revisar_orcamento | EM_DIAGNOSTICO | A, T, G, P | cria nova versão; anterior vira `substituido` | `orcamento_revisado` | — |
-| 10 | AGUARDANDO_PECA | peca_disponivel | EM_REPARO | T, G, P | — | `peca_recebida` | não |
-| 11 | AGUARDANDO_PECA | liberar_sem_reparo / cancelar | PRONTA_RETIRADA_SEM_REPARO / CANCELADA | G, P | motivo | `liberada_sem_reparo` / `os_cancelada` | não |
-| 12 | EM_REPARO | iniciar_testes | EM_TESTE | T, G, P | ao menos 1 tarefa de reparo registrada | `testes_iniciados` | via 14 |
-| 13 | EM_REPARO | novo_defeito | EM_DIAGNOSTICO | T, G, P | descrição do novo defeito; novo orçamento será necessário | `novo_defeito_identificado` | — |
-| 14 | EM_TESTE | reprovar_testes | EM_REPARO | T, G, P | ao menos 1 item reprovado; motivo | `testes_reprovados` | — |
-| 15 | EM_TESTE | aprovar_testes | PRONTA_RETIRADA | T, G, P | RN-052 | `testes_aprovados`, `liberada_retirada` | via 18 |
-| 16 | PRONTA_RETIRADA | entregar | ENTREGUE | A, G, P | registro de entrega completo (RN-051) | `entregue` | não |
-| 17 | PRONTA_RETIRADA_SEM_REPARO | entregar | ENTREGUE | A, G, P | idem | `entregue` | não |
-| 18 | PRONTA_RETIRADA | reabrir_bancada | EM_REPARO | G, P | motivo | `reaberta_bancada` | — |
-| 19 | PRONTA_RETIRADA_SEM_REPARO | reabrir_diagnostico | EM_DIAGNOSTICO | G, P | motivo (cliente mudou de ideia, orçamento revisado) | `reaberta_diagnostico` | — |
-| 20 | ENTREGUE | encerrar | ENCERRADA | G, P | — | `os_encerrada` | não |
+| 1 | `iniciar_diagnostico` | RECEBIDA | EM_DIAGNOSTICO | T, G, P | técnico atribuído | `diagnostico_iniciado` | direto |
+| 2, 5, 11 | `cancelar` | RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_PECA | CANCELADA | G, P | motivo | `os_cancelada` | direto |
+| 3 | `enviar_orcamento` | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | A, G, P | diagnóstico válido (RN-020), orçamento enviado | `orcamento_enviado` | orçamento |
+| 4 | `liberar_sem_reparo` | EM_DIAGNOSTICO | PRONTA_RETIRADA_SEM_REPARO | T, G, P | motivo | `liberada_sem_reparo` | direto |
+| 6 | `aprovar_orcamento` | AGUARDANDO_APROVACAO | EM_REPARO | A, G, P (S na aprovação remota, futura) | decisão `aprovado` na versão vigente | `orcamento_aprovado` | orçamento |
+| 7 | `aprovar_orcamento_aguardando_peca` | AGUARDANDO_APROVACAO | AGUARDANDO_PECA | A, G, P | idem; peça indisponível informada | `orcamento_aprovado` | orçamento |
+| 8a | `recusar_orcamento` | AGUARDANDO_APROVACAO | PRONTA_RETIRADA_SEM_REPARO | A, G, P | decisão `recusado` | `orcamento_recusado` | orçamento |
+| 8b | `expirar_orcamento` | AGUARDANDO_APROVACAO | PRONTA_RETIRADA_SEM_REPARO | S | validade vencida | `orcamento_expirado` | orçamento |
+| 9 | `revisar_orcamento` | AGUARDANDO_APROVACAO | EM_DIAGNOSTICO | A, G, P | cria nova versão; anterior vira `substituido` | `orcamento_revisado` | orçamento |
+| 10 | `peca_disponivel` | AGUARDANDO_PECA | EM_REPARO | T, G, P | — | `peca_recebida` | direto |
+| 11b | `liberar_sem_reparo_aguardando_peca` | AGUARDANDO_PECA | PRONTA_RETIRADA_SEM_REPARO | G, P | motivo | `liberada_sem_reparo` | direto |
+| 12 | `iniciar_testes` | EM_REPARO | EM_TESTE | T, G, P | ao menos 1 tarefa de reparo | `testes_iniciados` | fase 4 |
+| 13 | `novo_defeito` | EM_REPARO | EM_DIAGNOSTICO | T, G, P | motivo; novo orçamento será necessário | `novo_defeito_identificado` | direto |
+| 14 | `reprovar_testes` | EM_TESTE | EM_REPARO | T, G, P | ao menos 1 item reprovado; motivo | `testes_reprovados` | fase 4 |
+| 15 | `aprovar_testes` | EM_TESTE | PRONTA_RETIRADA | T, G, P | RN-052 | `testes_aprovados` | fase 4 |
+| 16, 17 | `entregar` | PRONTA_RETIRADA, PRONTA_RETIRADA_SEM_REPARO | ENTREGUE | A, G, P | registro de entrega completo (RN-051) | `entregue` | fase 4 |
+| 18 | `reabrir_bancada` | PRONTA_RETIRADA | EM_REPARO | G, P | motivo | `reaberta_bancada` | fase 4 |
+| 19 | `reabrir_diagnostico` | PRONTA_RETIRADA_SEM_REPARO | EM_DIAGNOSTICO | G, P | motivo | `reaberta_diagnostico` | direto |
+| 20 | `encerrar` | ENTREGUE | ENCERRADA | G, P | — | `os_encerrada` | fase 4 |
 
-Qualquer par (estado, ação) fora da tabela retorna `422 TRANSICAO_INVALIDA` sem alterar nada.
+Qualquer par (estado, ação) fora da tabela retorna `422 TRANSICAO_INVALIDA` sem alterar nada. Ação de fase 4 retorna `422 ACAO_INDISPONIVEL`.
+
+Mudanças em relação à versão da Fase 0: ações de aprovação/recusa/expiração/liberação ganharam nomes distintos (uma ação por destino); o **técnico saiu da revisão de orçamento** (linha 9), pois a recomendação P-13 limita o técnico ao rascunho.
+
+## Controle de concorrência
+Toda mudança de estado incrementa `work_orders.version`. O endpoint direto exige `expectedVersion`; uma segunda chamada com a mesma versão (duplo clique) recebe `409 CONFLITO_DE_VERSAO`. **Desvio da RN-006**: a proteção é por versão, não por chave de idempotência da operação. Nas decisões de orçamento a idempotência é real (uma decisão por versão do orçamento).
+
+Ordem de travas: sempre a linha da OS primeiro, depois a versão do orçamento.
 
 ## Erros esperados
-`TRANSICAO_INVALIDA` (422), `PERMISSAO_NEGADA` (403), `CONFLITO_DE_VERSAO` (409), `PRECONDICAO_NAO_ATENDIDA` (422, com código da condição), `OS_NAO_ENCONTRADA` (404, também para OS de outro tenant).
+`TRANSICAO_INVALIDA` (422), `ACAO_INDISPONIVEL` (422), `PERMISSAO_NEGADA` (403), `CONFLITO_DE_VERSAO` (409), `PRECONDICAO_NAO_ATENDIDA` (422, com código da condição), `OS_NAO_ENCONTRADA` (404, também para OS de outra empresa ou não atribuída ao técnico).
 
 ## Fluxos alternativos cobertos
-- Orçamento recusado → 8. Expirado → 8 (job).
-- Cliente sem resposta → orçamento expira → 8.
-- Peça indisponível → 7/10/11.
+- Orçamento recusado → 8a. Expirado → 8b. Cliente sem resposta → orçamento expira → 8b.
+- Peça indisponível → 7, 10, 11b.
 - Diagnóstico inconclusivo / reparo impossível → 4.
-- Novo defeito durante reparo → 13, novo orçamento, nova aprovação.
-- Teste reprovado → 14.
-- Cancelamento autorizado → 2, 5, 11 (G/P, motivo).
-- Retorno ou reclamação posterior → nova OS com `os_origem_id` (RN-007).
+- Novo defeito durante o reparo → 13, novo orçamento, nova aprovação.
+- Teste reprovado → 14 (fase 4).
+- Cancelamento autorizado → 2/5/11 (G/P, motivo).
+- Retorno ou reclamação posterior → nova OS com `os_origem_id` (RN-007; fase 4).
+- Cliente muda de ideia após recusa → 19 (G/P, motivo) e novo orçamento.
+
+## Rascunho de orçamento ao sair do diagnóstico
+Cancelar ou liberar sem reparo **não apaga** o rascunho: ele fica preservado (e editável se a OS voltar a `EM_DIAGNOSTICO`). Só pode existir uma versão aberta (rascunho ou enviada) por OS.
 
 ## Fluxo principal de recebimento (passos)
 
 1. Atendente busca/cria cliente (alerta de duplicidade, sem fusão automática).
 2. Busca/cria equipamento do cliente.
-3. Preenche inspeção: defeito relatado, estado físico, acessórios, checklist, fotos.
+3. Preenche inspeção: defeito relatado, estado físico, acessórios, checklist, marca "senha informada".
 4. Servidor cria OS (`RECEBIDA`) + inspeção + evento na mesma transação e emite protocolo.
-5. Gera comprovante de recebimento (PDF) e etiqueta com QR de identificação (sem dados pessoais).
+5. Gera comprovante de recebimento (PDF).
+
+## Aprovação do orçamento
+- **Presencial** (implementada): atendente/gerente/proprietário registra a decisão com o nome de quem decidiu e uma observação; fica rotulada `presencial`.
+- **Remota** (RF-013): **bloqueada** até a decisão P-03 (canal de verificação do consumidor). Sem provedor de envio configurado, o sistema não simula códigos.
 
 ## QR
-- **Etiqueta física:** codifica identificador opaco da OS para a equipe autenticada. Escaneado fora do sistema ou sem login, não revela nada.
-- **Link do consumidor:** URL com token individual, enviado ao consumidor por canal definido; exige verificação antes de decisões.
+- **Etiqueta física:** codifica identificador opaco da OS para a equipe autenticada (Fase 5).
+- **Link do consumidor:** URL com token individual; exige verificação antes de decisões (Fase 5, depende de P-03).

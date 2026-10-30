@@ -156,13 +156,15 @@ export const workOrderEvents = pgTable(
     type: text("type").notNull(),
     fromState: text("from_state"),
     toState: text("to_state"),
-    actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+    /** Nulo apenas em eventos do sistema (expiração automática); nunca se atribui a uma pessoa que não agiu. */
+    actorUserId: uuid("actor_user_id").references(() => users.id),
     reason: text("reason"),
     createdAt: createdAt(),
   },
   (t) => [
     foreignKey({ name: "events_work_order_fk", columns: [t.tenantId, t.workOrderId], foreignColumns: [workOrders.tenantId, workOrders.id] }),
     index("events_work_order_idx").on(t.tenantId, t.workOrderId, t.createdAt),
+    check("events_actor_ck", sql`${t.actorUserId} is not null or ${t.type} = 'orcamento_expirado'`),
   ],
 );
 

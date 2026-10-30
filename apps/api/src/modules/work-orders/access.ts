@@ -29,11 +29,23 @@ export async function loadOrderForActor(db: Db, auth: AuthContext, orderId: stri
   return row;
 }
 
+/** Trava a OS sem recorte de papel: para fluxos do sistema e para a fila de técnicos. */
+export async function lockOrderById(db: Db, tenantId: string, orderId: string): Promise<WorkOrderRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.workOrders)
+    .where(and(eq(schema.workOrders.tenantId, tenantId), eq(schema.workOrders.id, orderId)))
+    .limit(1)
+    .for("update");
+  return row;
+}
+
 export interface EventInput {
   tenantId: string;
   workOrderId: string;
   type: string;
-  actorUserId: string;
+  /** Ausente apenas em eventos do sistema (expiração automática). */
+  actorUserId?: string;
   fromState?: string;
   toState?: string;
   reason?: string;

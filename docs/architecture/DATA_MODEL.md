@@ -64,3 +64,16 @@ Diferenças em relação ao desenho conceitual:
 - `generated_documents` **não** foi criada: o comprovante é gerado sob demanda a partir dos dados da OS, sem versionamento persistido.
 - Todas as FKs entre tabelas de empresa são compostas `(tenant_id, ...)`; a OS referencia `devices(tenant_id, customer_id, id)`, de modo que o equipamento precisa ser do cliente da OS.
 - CHECK em estado, prioridade, categoria, tipo de anexo, IMEI e (retroativamente) papel e status das tabelas da Fase 1.
+
+## Estado implementado (Fase 3)
+
+Implementado: `diagnostics`, `quote_versions`, `quote_items`, `quote_decisions`.
+
+Diferenças em relação ao desenho conceitual:
+- A tabela `quotes` foi **dispensada** (previsto em "Decisões de simplificação"): `quote_versions` carrega o estado e o `work_order_id`. Um índice único parcial garante no máximo uma versão aberta (`rascunho` ou `enviado`) por OS.
+- `quote_versions` tem `revision` (controle otimista do rascunho) e `based_on_diagnostic_id` / `suspicion_authorized_by` (P-09).
+- **Imutabilidade no banco:** o gatilho `quote_versions_guard` congela itens, valores, prazos e condições depois do envio e só admite `rascunho→enviado` e `enviado→aprovado|recusado|expirado|substituido`. O gatilho `quote_items_guard` recusa qualquer mudança de item fora de rascunho (falha fechada sem contexto de empresa). Valem também para o papel migrador.
+- `quote_decisions`: uma por versão (`UNIQUE`), append-only; `channel` aceita `presencial` e `remoto`, mas só `presencial` é gravado.
+- `diagnostics`: append-only, uma linha por revisão.
+- `work_order_events.actor_user_id` passou a aceitar nulo, **somente** para o evento do sistema `orcamento_expirado` (CHECK `events_actor_ck`).
+- Valores monetários em `bigint` (centavos) com CHECK `total = subtotal - desconto` e `0 <= desconto <= subtotal`.

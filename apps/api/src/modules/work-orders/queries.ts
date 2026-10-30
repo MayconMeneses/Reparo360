@@ -3,6 +3,8 @@ import { isRestrictedToAssigned, type WorkOrderState } from "@reparo360/domain";
 import { and, asc, desc, eq, ilike, isNull } from "drizzle-orm";
 import type { AuthContext } from "../../auth-context.js";
 import type { AppServices } from "../../services.js";
+import { listDiagnostics } from "../diagnostics/diagnostics.js";
+import { loadQuotes } from "../quotes/quote-access.js";
 import { escapeLike } from "../shared/query.js";
 import { loadOrderForActor, visibleToActor } from "./access.js";
 
@@ -125,6 +127,8 @@ export async function getWorkOrder(deps: AppServices, auth: AuthContext, orderId
         : null,
       events,
       attachments,
+      diagnostics: await listDiagnostics(db, auth.tenantId, order.id),
+      quotes: await loadQuotes(db, auth.tenantId, order.id),
     };
   });
 }

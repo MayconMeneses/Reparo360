@@ -1,5 +1,5 @@
 import { schema, withContext, type Db } from "@reparo360/database";
-import { formatProtocol, protocolYear } from "@reparo360/domain";
+import { formatProtocol, isClosedForChanges, protocolYear, type WorkOrderState } from "@reparo360/domain";
 import { and, eq, sql } from "drizzle-orm";
 import { recordAudit } from "../../audit.js";
 import type { AuthContext } from "../../auth-context.js";
@@ -20,7 +20,7 @@ export interface OpenedOrder {
 }
 
 /** Só membro ativo com papel de técnico pode ser atribuído. */
-async function assertAssignableTechnician(db: Db, tenantId: string, userId: string): Promise<void> {
+export async function assertAssignableTechnician(db: Db, tenantId: string, userId: string): Promise<void> {
   const [member] = await db
     .select({ id: schema.memberships.id })
     .from(schema.memberships)
@@ -169,6 +169,9 @@ export async function assignTechnician(
       throw new HttpError(409, "CONFLITO_DE_VERSAO", "A OS foi alterada por outra pessoa. Recarregue e tente novamente.", {
         currentVersion: order.version,
       });
+    }
+    if (isClosedForChanges(order.state as WorkOrderState)) {
+      throw new HttpError(422, "OS_ENCERRADA", "Esta OS não aceita mais alterações.");
     }
     if (input.technicianId) await assertAssignableTechnician(db, auth.tenantId, input.technicianId);
 

@@ -102,7 +102,7 @@ export async function loginOk(env: TestEnv, email: string, tenantId?: string): P
   return session;
 }
 
-export function call(env: TestEnv, session: Session | null, method: "GET" | "POST" | "PATCH" | "DELETE", url: string, payload?: object, extraHeaders: Record<string, string> = {}) {
+export function call(env: TestEnv, session: Session | null, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", url: string, payload?: object, extraHeaders: Record<string, string> = {}) {
   const headers: Record<string, string> = { ...extraHeaders };
   if (session) {
     headers.cookie = session.cookie;
@@ -172,3 +172,58 @@ export function upload(env: TestEnv, session: Session, orderId: string, contentT
     payload: body,
   });
 }
+
+// --- Fase 3 -----------------------------------------------------------------
+
+export async function orderDetail(env: TestEnv, session: Session, orderId: string) {
+  return (await call(env, session, "GET", `/work-orders/${orderId}`)).json();
+}
+
+/** Aplica uma transição direta lendo a versão atual da OS. */
+export async function transition(env: TestEnv, session: Session, orderId: string, action: string, reason?: string) {
+  const { version } = await orderDetail(env, session, orderId);
+  return call(env, session, "POST", `/work-orders/${orderId}/transitions`, { action, expectedVersion: version, reason });
+}
+
+export const goodDiagnostic = (extra: object = {}) => ({
+  nature: "confirmado", symptoms: "Não carrega", checksPerformed: "Teste de carga e multímetro", findings: "Bateria viciada", ...extra,
+});
+
+export const goodQuote = (extra: object = {}) => ({
+  items: [
+    { kind: "peca", description: "Bateria", quantity: 1, unitPriceCents: 15000 },
+    { kind: "servico", description: "Mão de obra", quantity: 2, unitPriceCents: 4590 },
+  ],
+  discountCents: 0,
+  paymentTerms: "À vista ou cartão em até 3x",
+  estimatedDays: 3,
+  ...extra,
+});
+
+/** OS aberta, com técnico atribuído e já em EM_DIAGNOSTICO. */
+export async function orderInDiagnosis(env: TestEnv, owner: Session) {
+  const tech = await addMember(env, owner, "tecnico");
+  const techSession = await loginOk(env, tech.email);
+  const order = await setupOrder(env, owner, { technicianId: tech.userId });
+  const started = await transition(env, owner, order.orderId, "iniciar_diagnostico");
+  if (started.statusCode !== 200) throw new Error(`iniciar_diagnostico falhou: ${started.statusCode} ${started.body}`);
+  return { ...order, tech, techSession };
+}
+
+export async function diagnose(env: TestEnv, session: Session, orderId: string, extra: object = {}) {
+  const res = await call(env, session, "POST", `/work-orders/${orderId}/diagnostics`, goodDiagnostic(extra));
+  if (res.statusCode !== 201) throw new Error(`diagnóstico falhou: ${res.statusCode} ${res.body}`);
+  return res.json();
+}
+
+/** Rascunho criado e enviado. Devolve a versão enviada. */
+export async function sendQuote(env: TestEnv, session: Session, orderId: string, quoteExtra: object = {}) {
+  const created = await call(env, session, "POST", `/work-orders/${orderId}/quotes`, goodQuote(quoteExtra));
+  if (created.statusCode !== 201) throw new Error(`rascunho falhou: ${created.statusCode} ${created.body}`);
+  const draft = created.json<{ id: string; revision: number }>();
+  const sent = await call(env, session, "POST", `/quotes/${draft.id}/submit`, { revision: draft.revision });
+  if (sent.statusCode !== 200) throw new Error(`envio falhou: ${sent.statusCode} ${sent.body}`);
+  return sent.json<{ quote: { id: string; totalCents: number; validUntil: string } }>().quote;
+}
+
+export const decisionBody = (extra: object = {}) => ({ decision: "aprovado", confirmedByName: "Maria Teste", ...extra });
