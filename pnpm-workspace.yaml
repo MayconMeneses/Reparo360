@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+
+# drizzle-kit ainda depende de @esbuild-kit com esbuild <=0.24.2 (GHSA do servidor de
+# desenvolvimento). Força a versão corrigida; remover quando o drizzle-kit atualizar.
+overrides:
+  "esbuild@<0.25.0": ">=0.25.12"

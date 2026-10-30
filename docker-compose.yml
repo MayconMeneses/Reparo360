@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?defina no .env}
+      MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?defina no .env}
+      APP_PASSWORD: ${APP_PASSWORD:?defina no .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-54329}:5432"
+    volumes:
+      - reparo360_pgdata:/var/lib/postgresql/data
+      - ./infra/docker/initdb:/docker-entrypoint-initdb.d:ro
+volumes:
+  reparo360_pgdata:

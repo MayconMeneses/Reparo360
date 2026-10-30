@@ -1,0 +1,23 @@
+{
+  "name": "reparo360",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @reparo360/database db:generate",
+    "db:migrate": "pnpm --filter @reparo360/database db:migrate",
+    "loc:check": "node scripts/check-file-size.mjs",
+    "backup:check": "node scripts/backup-restore-check.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}
