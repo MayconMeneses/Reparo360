@@ -2,7 +2,8 @@
 
 1. **Fase:** 4
 2. **Objetivo:** registro do reparo, testes finais, liberação para retirada, entrega, encerramento, documentos operacionais e OS de retorno.
-3. **Decisões aplicadas:** P-17 (encerramento manual). P-05 parcial: documentos só com dados registrados, sem cláusulas inventadas. Propostas técnicas novas: P-28 a P-31.
+3. **Commit/branch:** `457230f` em `main` (publicado em `MayconMeneses/Reparo360`).
+4. **Decisões aplicadas:** P-17 (encerramento manual). P-05 parcial: documentos só com dados registrados, sem cláusulas inventadas. Propostas técnicas novas: P-28 a P-31.
 
 ## Resultado dos gates
 
@@ -17,14 +18,12 @@
 | Smoke do bundle | PASS | 17/17 passos contra `dist/server.js`: OS, diagnóstico, orçamento, reparo, testes, entrega, 5 PDFs reais (`%PDF-`), encerramento e recusa de gravação em OS encerrada |
 | Limite de linhas (RNF-007) | PASS | 104 arquivos, nenhum acima de 300 |
 | Auditoria de dependências | PASS | `pnpm audit`: 0 |
-| Backup e restauração | PASS em execução anterior; **reconfirmação após os últimos ajustes: ver nota abaixo** | `pnpm backup:check`: 27 políticas e flags FORCE idênticas após restaurar |
+| Backup e restauração | PASS | `pnpm backup:check` reexecutado depois de todos os ajustes: contagens, 27 políticas e flags FORCE idênticas após restaurar |
 | Aprovação remota (RF-013) | **BLOCKED** | depende de P-03 |
 | Agendador de expiração | **NOT_RUN** | P-25 |
 | E2E de interface, performance, DAST/SAST | NOT_RUN | sem interface ainda; Fase 6 |
 
-**Total: 258 testes, 258 passaram** (43 + 55 + 160), contra PostgreSQL 17 real e dados sintéticos.
-
-> **Nota sobre o backup:** o `backup:check` passou depois da criação das tabelas da Fase 4. Os ajustes posteriores foram só de código da API, que não afetam o esquema nem os dados. Ao tentar reexecutá-lo no fim, o Docker Desktop da máquina ficou instável e nenhum teste de banco pôde ser repetido naquele momento. A suíte completa (258) já havia passado antes dessa instabilidade. Se o Docker voltou a responder antes do commit, o resultado da reexecução está registrado na mensagem final da sessão.
+**Total: 258 testes, 258 passaram** (43 + 55 + 160), contra PostgreSQL 17 real e dados sintéticos. Suíte completa e backup reexecutados após a instabilidade do Docker, com o mesmo resultado.
 
 ## Funcionalidades entregues
 - **Reparo:** tarefas append-only (procedimento, peças em texto livre, desfecho), só com a OS em reparo e presas ao ciclo de bancada.
@@ -67,4 +66,4 @@ Sem aprovação remota, portal do consumidor e QR (Fase 5), o consumidor ainda n
 ## Próximos passos
 Fase 5: dashboard (indicadores com fórmula/fonte), painel web e PWA, portal do consumidor e QR (QR e portal dependem de P-03 para decisões remotas). Antes, decidir a stack de interface e o desenho do design system.
 
-**Status: PENDENTE** — nenhum gate reprovou e os 258 testes passam, mas RF-013 está BLOQUEADO, o agendador está NOT_RUN, o backup precisa de reconfirmação final e há desvios declarados (P-29, P-30). A fase aguarda sua revisão. Não é "APROVADA".
+**Status: PENDENTE** — nenhum gate reprovou e os 258 testes passam, mas RF-013 está BLOQUEADO, o agendador está NOT_RUN, há desvios declarados (P-29, P-30). A fase aguarda sua revisão. Não é "APROVADA".
