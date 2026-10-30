@@ -52,3 +52,15 @@ Conceitual, não é DDL. As migrações serão criadas por fase, somente para as
 
 ## Fora do MVP (não criar)
 `branches`, `parts`, `stock_*`, `payments`, `expenses`, `warranty_claims`, `notification_deliveries`, `plans`, `subscriptions`, `integration_credentials`.
+
+## Estado implementado (Fase 2)
+
+Implementado: `customers`, `devices`, `work_orders`, `intake_inspections`, `work_order_events`, `attachments`, mais `protocol_counters` (não previsto no desenho inicial: contador por empresa e ano, sem lacunas em rollback).
+
+Diferenças em relação ao desenho conceitual:
+- `work_orders.idempotency_key` (UNIQUE por empresa) protege a abertura contra duplo clique.
+- `attachments` usa exclusão lógica (`deleted_at`, `deleted_by`); só essas colunas podem ser atualizadas pela aplicação.
+- `work_order_events` não tem chave de idempotência própria ainda (entra com a máquina de estados, Fase 3).
+- `generated_documents` **não** foi criada: o comprovante é gerado sob demanda a partir dos dados da OS, sem versionamento persistido.
+- Todas as FKs entre tabelas de empresa são compostas `(tenant_id, ...)`; a OS referencia `devices(tenant_id, customer_id, id)`, de modo que o equipamento precisa ser do cliente da OS.
+- CHECK em estado, prioridade, categoria, tipo de anexo, IMEI e (retroativamente) papel e status das tabelas da Fase 1.

@@ -15,6 +15,20 @@
       "when": 1793381132818,
       "tag": "0001_rls_and_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793382981433,
+      "tag": "0002_fase2_tabelas",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793383005833,
+      "tag": "0003_rls_fase2",
+      "breakpoints": true
     }
   ]
 }

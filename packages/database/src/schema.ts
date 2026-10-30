@@ -1,7 +1,5 @@
 import { index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
-
-const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
-const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+import { createdAt, updatedAt } from "./columns.js";
 
 /** Assistência técnica. O próprio id é o tenant. */
 export const tenants = pgTable("tenants", {

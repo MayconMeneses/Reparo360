@@ -34,11 +34,32 @@ describe("catálogo do banco", () => {
         OR EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped)
       )`);
     const names = res.rows.map((r) => r.relname).sort();
-    expect(names).toEqual(["audit_events", "memberships", "sessions", "tenants"]);
+    // Lista deliberada: tabela nova com tenant_id faz este teste falhar até ser incluída com RLS.
+    expect(names).toEqual([
+      "attachments",
+      "audit_events",
+      "customers",
+      "devices",
+      "intake_inspections",
+      "memberships",
+      "protocol_counters",
+      "sessions",
+      "tenants",
+      "work_order_events",
+      "work_orders",
+    ]);
     for (const row of res.rows) {
       expect(row.relrowsecurity, `${row.relname} sem RLS`).toBe(true);
       expect(row.relforcerowsecurity, `${row.relname} sem FORCE`).toBe(true);
     }
+  });
+
+  it("toda política que escreve tem WITH CHECK (não permite mover linha para outro tenant)", async () => {
+    const res = await pools.app.query(
+      "SELECT tablename, policyname, cmd, with_check FROM pg_policies WHERE schemaname = 'public' AND cmd IN ('ALL', 'INSERT', 'UPDATE')",
+    );
+    expect(res.rows.length).toBeGreaterThan(0);
+    for (const row of res.rows) expect(row.with_check, `${row.tablename}.${row.policyname}`).not.toBeNull();
   });
 
   it("users (global) tem RLS ativada", async () => {

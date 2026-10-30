@@ -25,3 +25,15 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-19 | Resposta 409 `EMAIL_JA_CADASTRADO` em cadastro de assistência e de membro revela que o e-mail existe | manter com rate limit; resposta genérica + confirmação por e-mail | enumeração de contas | resposta genérica quando houver canal de e-mail (P-03) | piloto |
 | P-20 | Rate limit atual é em memória, por IP, instância única; sem bloqueio por conta | Redis/PostgreSQL para limite compartilhado; atraso progressivo por conta | força bruta distribuída, múltiplas instâncias | limite por conta + armazenamento compartilhado antes de rodar mais de uma instância | Fase 6 |
 | P-21 | Recuperação de senha | por e-mail (depende de P-03); presencial pelo proprietário | acesso | por e-mail após P-03 | piloto |
+
+## Atualizações da Fase 2 (2026-10-30)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-07 | **Decidido** (recomendação seguida) | Protocolo `AAAA-NNNNNN`, sequencial por empresa e ano, ano no fuso America/Sao_Paulo. Não é credencial. |
+| P-08 | **Decidido** (recomendação seguida) | Só a marca "senha informada". A senha nunca é recebida nem armazenada; o campo extra é rejeitado. |
+| P-02 | **Parcial** | Interface de armazenamento + adaptador em disco privado (fora do OneDrive). **Adaptador S3 não implementado nem testado** (NOT_RUN). Segue aberto até P-01 (hospedagem). |
+| P-12 | **Adiado para a Fase 3** | Técnico vê só OS atribuídas. A fila de OS sem técnico (sem dados pessoais) depende da transição "assumir OS" da máquina de estados. |
+| P-22 | Novo | Varredura de arquivos órfãos (queda do processo entre gravar o arquivo e confirmar a transação) e política de retenção de anexos excluídos logicamente. |
+| P-23 | Novo | Remoção de EXIF/GPS das fotos e verificação de malware nos anexos (spec 22.3). Exige biblioteca de imagem; não implementado. |
+| P-24 | Novo | Conteúdo jurídico do comprovante (cláusulas, prazo de guarda do equipamento). Depende de P-05. O comprovante atual só registra o recebimento e informa que não é documento fiscal. |

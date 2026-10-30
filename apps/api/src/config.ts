@@ -5,6 +5,7 @@ const booleanFlag = (fallback: "true" | "false") =>
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
+  STORAGE_DIR: z.string().min(1),
   HOST: z.string().default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   COOKIE_SECURE: booleanFlag("true"),
@@ -16,6 +17,8 @@ const envSchema = z.object({
 
 export interface Config {
   databaseUrl: string;
+  /** Pasta privada dos anexos: fora de pastas sincronizadas (OneDrive) e nunca servida diretamente. */
+  storageDir: string;
   host: string;
   port: number;
   cookieSecure: boolean;
@@ -35,6 +38,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = envSchema.parse(env);
   return {
     databaseUrl: parsed.DATABASE_URL,
+    storageDir: parsed.STORAGE_DIR,
     host: parsed.HOST,
     port: parsed.PORT,
     cookieSecure: parsed.COOKIE_SECURE,

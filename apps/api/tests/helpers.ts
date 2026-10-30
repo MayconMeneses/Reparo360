@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createPool, runMigrations, schema, withContext } from "@reparo360/database";
 import type { FastifyInstance } from "fastify";
 import type pg from "pg";
@@ -20,13 +23,17 @@ export interface TestEnv {
   pool: pg.Pool;
   /** Papel migrador: só para inspecionar/alterar estado nos testes. */
   migrator: pg.Pool;
+  /** Pasta temporária dos anexos deste ambiente de teste. */
+  storageDir: string;
   close: () => Promise<void>;
 }
 
-export async function startTestEnv(overrides: Record<string, string> = {}): Promise<TestEnv> {
+export async function startTestEnv(overrides: Record<string, string> = {}, clock?: () => Date): Promise<TestEnv> {
+  const storageDir = await mkdtemp(join(tmpdir(), "reparo360-test-"));
   await runMigrations(requireEnv("TEST_MIGRATION_DATABASE_URL"));
   const config: Config = loadConfig({
     DATABASE_URL: requireEnv("TEST_DATABASE_URL"),
+    STORAGE_DIR: storageDir,
     COOKIE_SECURE: "true",
     ALLOW_PUBLIC_ONBOARDING: "true",
     LOGIN_RATE_LIMIT_MAX: "1000",
@@ -35,15 +42,17 @@ export async function startTestEnv(overrides: Record<string, string> = {}): Prom
   });
   const pool = createPool(config.databaseUrl, 5);
   const migrator = createPool(requireEnv("TEST_MIGRATION_DATABASE_URL"), 2);
-  const app = await buildApp({ config, pool });
+  const app = await buildApp({ config, pool, clock });
   return {
     app,
     pool,
     migrator,
+    storageDir,
     close: async () => {
       await app.close();
       await pool.end();
       await migrator.end();
+      await rm(storageDir, { recursive: true, force: true });
     },
   };
 }
@@ -93,8 +102,8 @@ export async function loginOk(env: TestEnv, email: string, tenantId?: string): P
   return session;
 }
 
-export function call(env: TestEnv, session: Session | null, method: "GET" | "POST" | "PATCH", url: string, payload?: object) {
-  const headers: Record<string, string> = {};
+export function call(env: TestEnv, session: Session | null, method: "GET" | "POST" | "PATCH" | "DELETE", url: string, payload?: object, extraHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = { ...extraHeaders };
   if (session) {
     headers.cookie = session.cookie;
     headers["x-csrf-token"] = session.csrf;
@@ -112,4 +121,54 @@ export async function addMember(env: TestEnv, owner: Session, role: string, labe
 
 export function sessionsOf(env: TestEnv, tenantId: string) {
   return withContext(env.migrator, { tenantId }, (db) => db.select().from(schema.sessions));
+}
+
+// --- Fase 2 -----------------------------------------------------------------
+
+export const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from("conteudo sintetico de imagem")]);
+export const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("conteudo sintetico")]);
+
+export async function newCustomer(env: TestEnv, session: Session, name = "Maria Teste", phone = "(85) 99999-1234") {
+  const res = await call(env, session, "POST", "/customers", { name, phone, confirmDuplicate: true });
+  if (res.statusCode !== 201) throw new Error(`cliente falhou: ${res.statusCode} ${res.body}`);
+  return res.json<{ id: string }>().id;
+}
+
+export async function newDevice(env: TestEnv, session: Session, customerId: string, extra: object = {}) {
+  const res = await call(env, session, "POST", `/customers/${customerId}/devices`, { category: "celular", brand: "Marca", model: "Modelo X", ...extra });
+  if (res.statusCode !== 201) throw new Error(`equipamento falhou: ${res.statusCode} ${res.body}`);
+  return res.json<{ id: string }>().id;
+}
+
+export const inspectionPayload = (overrides: object = {}) => ({
+  physicalCondition: "Tela trincada no canto superior.",
+  accessories: ["carregador"],
+  checklist: [{ item: "Tela", result: "com_defeito" }, { item: "Câmera", result: "nao_testado" }],
+  passwordInformed: false,
+  ...overrides,
+});
+
+export async function openOrder(env: TestEnv, session: Session, customerId: string, deviceId: string, extra: object = {}, headers: Record<string, string> = {}) {
+  return call(env, session, "POST", "/work-orders", {
+    customerId, deviceId, reportedDefect: "Não liga", inspection: inspectionPayload(), ...extra,
+  }, headers);
+}
+
+/** Cliente + equipamento + OS prontos; devolve os ids. */
+export async function setupOrder(env: TestEnv, session: Session, extra: object = {}) {
+  const customerId = await newCustomer(env, session);
+  const deviceId = await newDevice(env, session, customerId);
+  const res = await openOrder(env, session, customerId, deviceId, extra);
+  if (res.statusCode !== 201) throw new Error(`OS falhou: ${res.statusCode} ${res.body}`);
+  const { id, protocol, version } = res.json<{ id: string; protocol: string; version: number }>();
+  return { customerId, deviceId, orderId: id, protocol, version };
+}
+
+export function upload(env: TestEnv, session: Session, orderId: string, contentType: string, body: Buffer) {
+  return env.app.inject({
+    method: "POST",
+    url: `/api/v1/work-orders/${orderId}/attachments`,
+    headers: { cookie: session.cookie, "x-csrf-token": session.csrf, "content-type": contentType },
+    payload: body,
+  });
 }

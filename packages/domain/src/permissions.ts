@@ -1,7 +1,7 @@
 import type { TenantRole } from "./roles.js";
 
 /**
- * Permissões implementadas até a Fase 1. Novas permissões entram junto com o
+ * Permissões implementadas até a Fase 2. Novas permissões entram junto com o
  * módulo que as usa (ver docs/security/ACCESS_CONTROL_MATRIX.md).
  */
 export const PERMISSIONS = [
@@ -9,19 +9,61 @@ export const PERMISSIONS = [
   "tenant.settings.write",
   "audit.read",
   "data.export",
+  "customer.create",
+  "customer.update",
+  "customer.read",
+  "device.create",
+  "device.update",
+  "device.read",
+  "work_order.create",
+  "work_order.read",
+  "work_order.assign",
+  "intake.write",
+  "attachment.upload",
+  "attachment.read",
+  "attachment.delete",
+  "document.generate",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
+const FRONT_DESK: readonly Permission[] = [
+  "customer.create",
+  "customer.update",
+  "customer.read",
+  "device.create",
+  "device.update",
+  "device.read",
+  "work_order.create",
+  "work_order.read",
+  "intake.write",
+  "attachment.upload",
+  "attachment.read",
+  "document.generate",
+];
+
 const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
   proprietario: new Set<Permission>(PERMISSIONS),
-  // Gerente: equipe com restrições (ver canAssignRole) e configuração operacional.
-  gerente: new Set<Permission>(["team.manage", "tenant.settings.write", "audit.read"]),
-  atendente: new Set<Permission>(),
-  tecnico: new Set<Permission>(),
+  // Gerente: equipe com restrições (ver canManageMember) e configuração operacional.
+  gerente: new Set<Permission>([
+    "team.manage",
+    "tenant.settings.write",
+    "audit.read",
+    ...FRONT_DESK,
+    "work_order.assign",
+    "attachment.delete",
+  ]),
+  atendente: new Set<Permission>(FRONT_DESK),
+  // Técnico: só o que se liga a OS atribuídas; o recorte por atribuição é feito no serviço.
+  tecnico: new Set<Permission>(["work_order.read", "attachment.upload", "attachment.read"]),
 };
 
 export function hasPermission(role: TenantRole, permission: Permission): boolean {
   return GRANTS[role].has(permission);
+}
+
+/** Papéis que só enxergam as OS atribuídas a eles (e sem dados de contato do cliente). */
+export function isRestrictedToAssigned(role: TenantRole): boolean {
+  return role === "tecnico";
 }
 
 /** Permissões que exigem autenticação recente (reautenticação). */

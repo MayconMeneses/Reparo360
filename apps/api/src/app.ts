@@ -9,14 +9,23 @@ import "./auth-context.js";
 import type { Config } from "./config.js";
 import { HttpError } from "./http-error.js";
 import { authRoutes } from "./modules/identity/auth.routes.js";
+import { attachmentRoutes } from "./modules/attachments/attachments.routes.js";
+import { LocalDiskStorage, type FileStorage } from "./modules/attachments/storage.js";
+import { customerRoutes } from "./modules/customers/customers.routes.js";
+import { deviceRoutes } from "./modules/devices/devices.routes.js";
+import { documentRoutes } from "./modules/documents/documents.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
+import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
+import type { AppServices } from "./services.js";
 
 export interface AppDeps {
   config: Config;
   pool: pg.Pool;
+  storage?: FileStorage;
+  clock?: () => Date;
 }
 
-export async function buildApp({ config, pool }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ config, pool, storage, clock }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 100 * 1024,
     genReqId: () => randomUUID(),
@@ -52,6 +61,12 @@ export async function buildApp({ config, pool }: AppDeps): Promise<FastifyInstan
       return reply.code(400).send({ error: { code: "VALIDACAO", message: "Dados inválidos.", details: { issues } } });
     }
     const status = (error as { statusCode?: number }).statusCode;
+    if (status === 413) {
+      return reply.code(413).send({ error: { code: "ARQUIVO_GRANDE_DEMAIS", message: "Conteúdo acima do limite permitido." } });
+    }
+    if (status === 415) {
+      return reply.code(415).send({ error: { code: "TIPO_NAO_SUPORTADO", message: "Tipo de conteúdo não suportado." } });
+    }
     if (status === 429) {
       return reply.code(429).send({ error: { code: "MUITAS_TENTATIVAS", message: "Muitas tentativas. Aguarde e tente novamente." } });
     }
@@ -75,8 +90,13 @@ export async function buildApp({ config, pool }: AppDeps): Promise<FastifyInstan
     }
   });
 
-  const deps = { config, pool };
+  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()) };
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });
+  await app.register(customerRoutes(deps), { prefix: "/api/v1" });
+  await app.register(deviceRoutes(deps), { prefix: "/api/v1" });
+  await app.register(workOrderRoutes(deps), { prefix: "/api/v1" });
+  await app.register(attachmentRoutes(deps), { prefix: "/api/v1" });
+  await app.register(documentRoutes(deps), { prefix: "/api/v1" });
   return app;
 }
