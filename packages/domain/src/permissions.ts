@@ -31,6 +31,9 @@ export const PERMISSIONS = [
   "quote.submit",
   "quote.manage",
   "quote.decision.in_person",
+  "repair.update",
+  "test_checklist.write",
+  "delivery.register",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -47,6 +50,7 @@ const FRONT_DESK: readonly Permission[] = [
   "attachment.upload",
   "attachment.read",
   "document.generate",
+  "delivery.register",
 ];
 
 const QUOTING: readonly Permission[] = ["quote.create", "quote.read", "quote.submit", "quote.manage", "quote.decision.in_person"];
@@ -63,6 +67,8 @@ const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
     "work_order.assign",
     "work_order.transition",
     "diagnostic.write",
+    "repair.update",
+    "test_checklist.write",
     "attachment.delete",
   ]),
   // Atendente orça e registra a decisão presencial; não muda estados diretamente.
@@ -74,6 +80,8 @@ const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
     "work_order.transition",
     "work_order.claim",
     "diagnostic.write",
+    "repair.update",
+    "test_checklist.write",
     "quote.create",
     "quote.read",
     "attachment.upload",

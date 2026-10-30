@@ -34,6 +34,20 @@ export async function assertAssignableTechnician(db: Db, tenantId: string, userI
   if (!member) throw new HttpError(422, "TECNICO_INVALIDO", "O técnico informado não existe ou está inativo.");
 }
 
+/** O retorno só se liga a uma OS já entregue/encerrada, da mesma empresa e do mesmo equipamento. */
+async function assertValidOrigin(db: Db, tenantId: string, originId: string, deviceId: string): Promise<void> {
+  const [origin] = await db
+    .select({ state: schema.workOrders.state, deviceId: schema.workOrders.deviceId })
+    .from(schema.workOrders)
+    .where(and(eq(schema.workOrders.tenantId, tenantId), eq(schema.workOrders.id, originId)))
+    .limit(1);
+  if (!origin) throw new HttpError(404, "OS_ORIGEM_NAO_ENCONTRADA", "OS de origem não encontrada.");
+  if (origin.state !== "ENTREGUE" && origin.state !== "ENCERRADA") {
+    throw new HttpError(422, "ORIGEM_INVALIDA", "A OS de origem precisa estar entregue ou encerrada.");
+  }
+  if (origin.deviceId !== deviceId) throw new HttpError(422, "ORIGEM_INVALIDA", "A OS de origem é de outro equipamento.");
+}
+
 /**
  * Próximo protocolo da empresa no ano. O upsert trava a linha do contador até o fim da
  * transação: abre em série por empresa e, se a abertura falhar, o número volta (sem lacuna).
@@ -103,6 +117,7 @@ export async function openWorkOrder(
         throw new HttpError(422, "EQUIPAMENTO_NAO_PERTENCE_AO_CLIENTE", "O equipamento não pertence a este cliente.");
       }
       if (input.technicianId) await assertAssignableTechnician(db, auth.tenantId, input.technicianId);
+      if (input.originWorkOrderId) await assertValidOrigin(db, auth.tenantId, input.originWorkOrderId, input.deviceId);
 
       const protocol = await nextProtocol(db, auth.tenantId, deps.clock());
       const [order] = await db
@@ -115,6 +130,7 @@ export async function openWorkOrder(
           reportedDefect: input.reportedDefect,
           priority: input.priority,
           technicianId: input.technicianId,
+          originWorkOrderId: input.originWorkOrderId,
           openedBy: auth.userId,
           idempotencyKey,
         })

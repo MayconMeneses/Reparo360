@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { formatBrl } from "../src/modules/documents/money.js";
 import { toWinAnsi } from "../src/modules/documents/pdf-text.js";
 import { detectType } from "../src/modules/attachments/signature.js";
 import { LocalDiskStorage } from "../src/modules/attachments/storage.js";
@@ -69,5 +70,20 @@ describe("LocalDiskStorage", () => {
     await storage.put(k, Buffer.from("original"));
     await expect(storage.put(k, Buffer.from("novo"))).rejects.toThrow();
     expect((await readFile(join(root, k))).toString()).toBe("original");
+  });
+});
+
+describe("formatBrl (centavos inteiros)", () => {
+  it("formata sem erro de ponto flutuante", () => {
+    expect(formatBrl(0)).toBe("R$ 0,00");
+    expect(formatBrl(5)).toBe("R$ 0,05");
+    expect(formatBrl(23180)).toBe("R$ 231,80");
+    expect(formatBrl(100000)).toBe("R$ 1.000,00");
+    expect(formatBrl(123456789)).toBe("R$ 1.234.567,89");
+    expect(formatBrl(500000000000)).toBe("R$ 5.000.000.000,00");
+  });
+  it("usa espaço comum depois do R$ (compatível com WinAnsi) e recusa valores inválidos", () => {
+    expect(formatBrl(100).charCodeAt(2)).toBe(32);
+    for (const bad of [-1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 2]) expect(() => formatBrl(bad), String(bad)).toThrow(RangeError);
   });
 });

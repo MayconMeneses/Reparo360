@@ -77,3 +77,14 @@ Diferenças em relação ao desenho conceitual:
 - `diagnostics`: append-only, uma linha por revisão.
 - `work_order_events.actor_user_id` passou a aceitar nulo, **somente** para o evento do sistema `orcamento_expirado` (CHECK `events_actor_ck`).
 - Valores monetários em `bigint` (centavos) com CHECK `total = subtotal - desconto` e `0 <= desconto <= subtotal`.
+
+## Estado implementado (Fase 4)
+
+Implementado: `repair_tasks`, `test_checks`, `deliveries` (todas append-only para a aplicação: `SELECT, INSERT`).
+
+Diferenças em relação ao desenho conceitual:
+- `repair_tasks` guarda o procedimento, peças em texto livre, desfecho (`concluido`, `parcial`, `sem_sucesso`) e o **ciclo de reparo**; evidências são os anexos da OS.
+- `test_checks` guarda uma linha por item de cada rodada (`round`), presa ao **ciclo de testes**; a rodada efetiva é a de maior `round` no ciclo atual. Resultado: `aprovado`, `reprovado`, `nao_testado`, `nao_aplicavel`.
+- `deliveries`: uma por OS (`UNIQUE`), sem número de documento do cliente; guarda quem retirou, o método de confirmação (P-28), os acessórios devolvidos e a observação.
+- `work_orders` ganhou `repair_cycle` e `test_cycle` (contadores) e `origin_work_order_id` (retorno ou reclamação; FK composta para a própria tabela e CHECK de não apontar para si mesma).
+- `generated_documents` segue **não criada** (P-30).

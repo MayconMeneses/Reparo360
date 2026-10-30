@@ -54,12 +54,18 @@ describe("transições diretas", () => {
     expect((await orderDetail(env, ownerA, orderId)).state).toBe("RECEBIDA");
   });
 
-  it("ações da Fase 4 e ações do orçamento não ficam disponíveis no endpoint direto", async () => {
+  it("entrega e ações do orçamento têm endpoint próprio: o genérico as recusa", async () => {
     const { orderId } = await setupOrder(env, ownerA);
-    for (const action of ["iniciar_testes", "aprovar_testes", "entregar", "encerrar", "aprovar_orcamento", "enviar_orcamento", "expirar_orcamento"]) {
+    for (const action of ["entregar", "aprovar_orcamento", "aprovar_orcamento_aguardando_peca", "recusar_orcamento", "enviar_orcamento", "revisar_orcamento", "expirar_orcamento"]) {
       const res = await transition(env, ownerA, orderId, action);
       expect(res.statusCode, action).toBe(422);
       expect(res.json().error.code, action).toBe("ACAO_INDISPONIVEL");
+    }
+    // As ações de reparo, testes e encerramento existem, mas respeitam a tabela: de RECEBIDA nenhuma vale.
+    for (const action of ["iniciar_testes", "reprovar_testes", "aprovar_testes", "reabrir_bancada", "encerrar"]) {
+      const res = await transition(env, ownerA, orderId, action, "motivo de teste");
+      expect(res.statusCode, action).toBe(422);
+      expect(res.json().error.code, action).toBe("TRANSICAO_INVALIDA");
     }
     const unknown = await transition(env, ownerA, orderId, "apagar_tudo");
     expect(unknown.statusCode).toBe(400);

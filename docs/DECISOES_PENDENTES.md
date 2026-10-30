@@ -51,3 +51,14 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-25 | Novo | Agendador da expiração automática de orçamentos. Hoje a expiração ocorre na tentativa de decisão ou por `POST /quotes/expire-due`. Sem agendador, um orçamento vencido sem ninguém tocar continua `enviado` e a OS em `AGUARDANDO_APROVACAO`. |
 | P-26 | Novo | Quantidade de item só inteira (sem horas fracionadas). Confirmar se a mão de obra por hora fracionada é necessária. |
 | P-27 | Novo | Versão do orçamento para o consumidor (PDF "orçamento" e "registro de aprovação") e elementos exigidos pelo CDC dependem de P-05 (revisão jurídica). |
+
+## Atualizações da Fase 4 (2026-10-30)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-17 | **Decidido** (recomendação seguida) | Encerramento manual, por gerente ou proprietário. |
+| P-05 | **Parcial** | Os documentos trazem só os dados registrados e o aviso de que não são fiscais. **Nenhuma cláusula jurídica foi inventada** e o conteúdo exigido pelo CDC segue sem revisão por advogado. Continua aberto. |
+| P-28 | Novo (proposta) | Métodos de confirmação da retirada: `comprovante_apresentado`, `documento_conferido`, `outro`. É uma proposta técnica a validar com assistências reais; não se coleta número de documento. |
+| P-29 | Novo | Técnico não emite nenhum PDF (o comprovante e a ordem de serviço trazem telefone do cliente). A matriz prevê "ordem de serviço" para o técnico: seria preciso uma versão sem dados de contato. Desvio declarado. |
+| P-30 | Novo | Os PDFs são gerados sob demanda a partir dos registros; não são guardados nem versionados (`generated_documents` não existe). Decidir se cada emissão deve ser arquivada. |
+| P-31 | Novo | Encerramento automático após N dias da entrega (alternativa a P-17), se as assistências pedirem. |

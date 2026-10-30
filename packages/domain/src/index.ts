@@ -4,3 +4,4 @@ export * from "./work-order.js";
 export * from "./identifiers.js";
 export * from "./state-machine.js";
 export * from "./quote.js";
+export * from "./testing.js";

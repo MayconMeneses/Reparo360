@@ -39,6 +39,7 @@ describe("catálogo do banco", () => {
       "attachments",
       "audit_events",
       "customers",
+      "deliveries",
       "devices",
       "diagnostics",
       "intake_inspections",
@@ -47,8 +48,10 @@ describe("catálogo do banco", () => {
       "quote_decisions",
       "quote_items",
       "quote_versions",
+      "repair_tasks",
       "sessions",
       "tenants",
+      "test_checks",
       "work_order_events",
       "work_orders",
     ]);

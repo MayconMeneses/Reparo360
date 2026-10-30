@@ -5,6 +5,7 @@ import type { AuthContext } from "../../auth-context.js";
 import type { AppServices } from "../../services.js";
 import { listDiagnostics } from "../diagnostics/diagnostics.js";
 import { loadQuotes } from "../quotes/quote-access.js";
+import { loadBenchData } from "./bench-queries.js";
 import { escapeLike } from "../shared/query.js";
 import { loadOrderForActor, visibleToActor } from "./access.js";
 
@@ -106,6 +107,8 @@ export async function getWorkOrder(deps: AppServices, auth: AuthContext, orderId
       reportedDefect: order.reportedDefect,
       technicianId: order.technicianId,
       version: order.version,
+      repairCycle: order.repairCycle,
+      testCycle: order.testCycle,
       createdAt: order.createdAt,
       customer: customer
         ? restricted
@@ -129,6 +132,7 @@ export async function getWorkOrder(deps: AppServices, auth: AuthContext, orderId
       attachments,
       diagnostics: await listDiagnostics(db, auth.tenantId, order.id),
       quotes: await loadQuotes(db, auth.tenantId, order.id),
+      ...(await loadBenchData(db, order, restricted)),
     };
   });
 }

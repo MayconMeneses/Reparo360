@@ -1,19 +1,25 @@
 import { createHash, randomUUID } from "node:crypto";
 import { schema, withContext } from "@reparo360/database";
-import type { AttachmentType } from "@reparo360/domain";
+import { TERMINAL_STATES, type AttachmentType, type WorkOrderState } from "@reparo360/domain";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { recordAudit } from "../../audit.js";
 import type { AuthContext } from "../../auth-context.js";
 import { HttpError } from "../../http-error.js";
 import type { AppServices } from "../../services.js";
 import type { RequestMeta } from "../identity/auth.service.js";
-import { addEvent, loadOrderForActor } from "../work-orders/access.js";
+import { addEvent, loadOrderForActor, lockOrderById } from "../work-orders/access.js";
 import { detectType } from "./signature.js";
 
 export const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 export const MAX_ATTACHMENTS_PER_ORDER = 20;
 
 const ctxOf = (auth: AuthContext) => ({ tenantId: auth.tenantId, userId: auth.userId });
+/** RN-007: OS encerrada ou cancelada é imutável, anexos inclusive. */
+function assertOrderOpen(state: string): void {
+  if (TERMINAL_STATES.includes(state as WorkOrderState)) {
+    throw new HttpError(422, "OS_ENCERRADA", "Esta OS está encerrada e não aceita alterações.");
+  }
+}
 const attachmentNotFound = () => new HttpError(404, "ANEXO_NAO_ENCONTRADO", "Anexo não encontrado.");
 
 export async function uploadAttachment(
@@ -38,6 +44,7 @@ export async function uploadAttachment(
     return await withContext(deps.pool, ctxOf(auth), async (db) => {
       // A trava na OS serializa uploads simultâneos, então o limite por OS não é furado em corrida.
       const order = await loadOrderForActor(db, auth, orderId, true);
+      assertOrderOpen(order.state);
       const [count] = await db
         .select({ total: sql<number>`count(*)::int` })
         .from(schema.attachments)
@@ -115,6 +122,14 @@ export async function downloadAttachment(deps: AppServices, auth: AuthContext, a
 /** Exclusão lógica: o arquivo é preservado, o anexo some das listagens e downloads. */
 export async function deleteAttachment(deps: AppServices, auth: AuthContext, attachmentId: string, meta: RequestMeta): Promise<void> {
   await withContext(deps.pool, ctxOf(auth), async (db) => {
+    const [target] = await db
+      .select({ workOrderId: schema.attachments.workOrderId })
+      .from(schema.attachments)
+      .where(and(eq(schema.attachments.tenantId, auth.tenantId), eq(schema.attachments.id, attachmentId), isNull(schema.attachments.deletedAt)))
+      .limit(1);
+    if (!target) throw attachmentNotFound();
+    const order = await lockOrderById(db, auth.tenantId, target.workOrderId);
+    if (order) assertOrderOpen(order.state);
     const [row] = await db
       .update(schema.attachments)
       .set({ deletedAt: new Date(), deletedBy: auth.userId })

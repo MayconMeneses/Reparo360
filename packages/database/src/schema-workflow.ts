@@ -101,10 +101,16 @@ export const workOrders = pgTable(
     version: integer("version").notNull().default(1),
     /** Chave enviada pelo cliente para tornar a abertura idempotente (duplo clique). */
     idempotencyKey: text("idempotency_key"),
+    /** Quantas vezes a OS entrou em EM_REPARO / EM_TESTE. Ancora tarefas e rodadas ao ciclo atual (sem comparar horários). */
+    repairCycle: integer("repair_cycle").notNull().default(0),
+    testCycle: integer("test_cycle").notNull().default(0),
+    /** Retorno ou reclamação posterior: aponta para a OS anterior da mesma empresa (RN-007). */
+    originWorkOrderId: uuid("origin_work_order_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    foreignKey({ name: "work_orders_origin_fk", columns: [t.tenantId, t.originWorkOrderId], foreignColumns: [t.tenantId, t.id] }),
     foreignKey({
       name: "work_orders_device_fk",
       columns: [t.tenantId, t.customerId, t.deviceId],

@@ -227,3 +227,48 @@ export async function sendQuote(env: TestEnv, session: Session, orderId: string,
 }
 
 export const decisionBody = (extra: object = {}) => ({ decision: "aprovado", confirmedByName: "Maria Teste", ...extra });
+
+// --- Fase 4 -----------------------------------------------------------------
+
+export const goodRepair = (extra: object = {}) => ({ procedure: "Troca de bateria e limpeza dos contatos", outcome: "concluido", ...extra });
+
+export const passingTests = () => ({
+  items: [{ item: "Carga", result: "aprovado" }, { item: "Tela", result: "aprovado" }, { item: "Câmera", result: "nao_aplicavel" }],
+});
+
+/** OS com orçamento aprovado em pessoa: chega em EM_REPARO. */
+export async function orderInRepair(env: TestEnv, owner: Session) {
+  const order = await orderInDiagnosis(env, owner);
+  await diagnose(env, order.techSession, order.orderId);
+  const sent = await sendQuote(env, owner, order.orderId);
+  const res = await call(env, owner, "POST", `/quotes/${sent.id}/decision`, decisionBody());
+  if (res.statusCode !== 201) throw new Error(`aprovação falhou: ${res.statusCode} ${res.body}`);
+  return { ...order, sent };
+}
+
+export async function repairAndStartTests(env: TestEnv, session: Session, orderId: string) {
+  const repaired = await call(env, session, "POST", `/work-orders/${orderId}/repairs`, goodRepair());
+  if (repaired.statusCode !== 201) throw new Error(`reparo falhou: ${repaired.statusCode} ${repaired.body}`);
+  const started = await transition(env, session, orderId, "iniciar_testes");
+  if (started.statusCode !== 200) throw new Error(`iniciar_testes falhou: ${started.statusCode} ${started.body}`);
+}
+
+/** Do reparo até PRONTA_RETIRADA, com testes aprovados. */
+export async function orderReadyForPickup(env: TestEnv, owner: Session) {
+  const order = await orderInRepair(env, owner);
+  await repairAndStartTests(env, order.techSession, order.orderId);
+  const tests = await call(env, order.techSession, "POST", `/work-orders/${order.orderId}/test-checks`, passingTests());
+  if (tests.statusCode !== 201) throw new Error(`testes falharam: ${tests.statusCode} ${tests.body}`);
+  const approved = await transition(env, order.techSession, order.orderId, "aprovar_testes");
+  if (approved.statusCode !== 200) throw new Error(`aprovar_testes falhou: ${approved.statusCode} ${approved.body}`);
+  return order;
+}
+
+export const deliveryBody = (version: number, extra: object = {}) => ({
+  expectedVersion: version, pickedUpByName: "Maria Teste", confirmationMethod: "comprovante_apresentado", itemsReturned: ["carregador"], ...extra,
+});
+
+export async function deliver(env: TestEnv, session: Session, orderId: string, extra: object = {}) {
+  const { version } = await orderDetail(env, session, orderId);
+  return call(env, session, "POST", `/work-orders/${orderId}/delivery`, deliveryBody(version, extra));
+}

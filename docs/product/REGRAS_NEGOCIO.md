@@ -40,7 +40,10 @@ Regras propostas na Fase 0. Onde há dependência jurídica ou comercial, remete
 ## Entrega e encerramento
 - **RN-050** Entrega só a partir de `PRONTA_RETIRADA` ou `PRONTA_RETIRADA_SEM_REPARO`.
 - **RN-051** Entrega registra responsável, quem retirou, método de confirmação, itens devolvidos e observação. Não exige documento pessoal por padrão.
-- **RN-052** Entrada em `PRONTA_RETIRADA` exige testes finais sem item "com defeito reprovado" e sem item obrigatório "não testado".
+- **RN-052** `aprovar_testes` (→ `PRONTA_RETIRADA`) exige, na última rodada do ciclo de testes atual: ao menos um item `aprovado`, nenhum `reprovado` e nenhum `nao_testado` (o que não se aplica é marcado `nao_aplicavel`). Rodada vazia ou só de `nao_aplicavel` nunca aprova. Não existe item "opcional": quem registra não consegue dispensar um item não testado.
+- **RN-053** `reprovar_testes` exige ao menos um item `reprovado` na última rodada do ciclo e motivo; a OS volta a `EM_REPARO` em um novo ciclo.
+- **RN-054** A entrega grava o registro de entrega e move a OS para `ENTREGUE` na mesma transação. Se os acessórios devolvidos diferem dos recebidos, a observação é obrigatória. Não se coleta número de documento do cliente.
+- **RN-055** Encerramento (`ENTREGUE` → `ENCERRADA`) é manual, por gerente ou proprietário (P-17).
 
 ## Multi-tenant e dados
 - **RN-060** Toda linha operacional pertence a um tenant; relacionamentos entre tenants diferentes são impossíveis (FK composta com `tenant_id`).

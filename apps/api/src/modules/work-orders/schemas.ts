@@ -22,6 +22,8 @@ export const openWorkOrderBody = z.strictObject({
   reportedDefect: z.string().trim().min(3).max(2000),
   priority: z.enum(WORK_ORDER_PRIORITIES).default("normal"),
   technicianId: z.uuid().optional(),
+  /** Retorno ou reclamação posterior: OS anterior (entregue ou encerrada) do mesmo equipamento. */
+  originWorkOrderId: z.uuid().optional(),
   inspection,
 });
 export type OpenWorkOrderInput = z.infer<typeof openWorkOrderBody>;

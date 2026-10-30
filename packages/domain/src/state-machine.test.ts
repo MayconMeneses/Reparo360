@@ -64,9 +64,17 @@ describe("tabela de transições", () => {
     for (const action of DIRECT_ACTIONS) expect(ruleFor(action)?.roles, action).not.toContain("atendente");
   });
 
-  it("apenas ações diretas ficam expostas; as da Fase 4 não", () => {
-    expect(DIRECT_ACTIONS).toEqual(expect.arrayContaining(["iniciar_diagnostico", "cancelar", "peca_disponivel", "novo_defeito"]));
-    for (const phase4 of ["iniciar_testes", "aprovar_testes", "entregar", "encerrar"]) expect(DIRECT_ACTIONS).not.toContain(phase4);
+  it("ações diretas: diagnóstico, reparo, testes e encerramento; entrega e orçamento têm endpoint próprio", () => {
+    expect(DIRECT_ACTIONS).toEqual(expect.arrayContaining([
+      "iniciar_diagnostico", "cancelar", "peca_disponivel", "novo_defeito", "iniciar_testes", "reprovar_testes", "aprovar_testes", "reabrir_bancada", "encerrar",
+    ]));
+    for (const other of ["entregar", "aprovar_orcamento", "enviar_orcamento", "expirar_orcamento"]) expect(DIRECT_ACTIONS).not.toContain(other);
+    expect(ruleFor("entregar")?.mode).toBe("delivery");
+  });
+
+  it("encerrar é só de gerente/proprietário (P-17: encerramento manual)", () => {
+    expect(ruleFor("encerrar")?.roles).toEqual(["gerente", "proprietario"]);
+    expect(ruleFor("encerrar")?.from).toEqual(["ENTREGUE"]);
   });
 
   it("ENTREGUE e estados terminais fecham alterações", () => {

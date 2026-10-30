@@ -7,7 +7,8 @@ import { HttpError } from "../../http-error.js";
 import type { AppServices } from "../../services.js";
 import type { RequestMeta } from "../identity/auth.service.js";
 import { addEvent, loadOrderForActor, lockOrderById, orderNotFound } from "./access.js";
-import { applyTransition } from "./transitions.js";
+import { assertPreconditions } from "./preconditions.js";
+import { applyTransition, assertTransitionAllowed } from "./transitions.js";
 import { assertAssignableTechnician } from "./work-orders.service.js";
 
 const ctxOf = (auth: AuthContext) => ({ tenantId: auth.tenantId, userId: auth.userId });
@@ -30,9 +31,8 @@ export async function transitionOrder(
         currentVersion: order.version,
       });
     }
-    if (input.action === "iniciar_diagnostico" && !order.technicianId) {
-      throw new HttpError(422, "SEM_TECNICO_ATRIBUIDO", "Atribua um técnico antes de iniciar o diagnóstico.");
-    }
+    assertTransitionAllowed(order, input.action, auth);
+    await assertPreconditions(db, order, input.action);
     const result = await applyTransition(db, { actor: auth, order, action: input.action, reason: input.reason });
     await recordAudit(db, {
       tenantId: auth.tenantId,
