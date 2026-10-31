@@ -26,6 +26,7 @@ import { technicianRoutes } from "./modules/team/technicians.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
+import { FailureThrottle } from "./security/throttle.js";
 import { createWebHandler } from "./web-app.js";
 
 export interface AppDeps {
@@ -49,6 +50,13 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
             level: config.logLevel,
             // Credenciais nunca vão para o log.
             redact: { paths: ["req.headers.cookie", "req.headers.authorization", 'req.headers["x-csrf-token"]', 'req.headers["x-portal-token"]'], remove: true },
+            serializers: {
+              // Só método, rota e origem. A query string leva buscas por nome, telefone e IMEI (dado pessoal) e não entra no log.
+              // Também não entram os cabeçalhos (user-agent, referer etc.): o ID de correlação basta para diagnosticar.
+              req(request: { method?: string; url?: string; socket?: { remoteAddress?: string } }) {
+                return { method: request.method, url: (request.url ?? "").split("?")[0], remoteAddress: request.socket?.remoteAddress };
+              },
+            },
             ...(logStream ? { stream: logStream } : {}),
           },
   });
@@ -61,6 +69,20 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
 
   app.addHook("onRequest", async (request, reply) => {
     reply.header("x-request-id", request.id);
+    // Defesa em profundidade contra CSRF (além de SameSite=Strict e do token): requisição que altera dados e vem
+    // de OUTRA origem é recusada. Sem o cabeçalho Origin (ferramentas, testes) segue para as demais barreiras.
+    const origin = request.headers.origin;
+    if (origin && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+      let sameOrigin = false;
+      try {
+        sameOrigin = new URL(origin).host === request.headers.host;
+      } catch {
+        sameOrigin = false;
+      }
+      if (!sameOrigin) {
+        return reply.code(403).send({ error: { code: "ORIGEM_INVALIDA", message: "Origem da requisição não permitida." } });
+      }
+    }
   });
   app.addHook("onSend", async (_request, reply) => {
     // Respostas da API nunca são guardadas; arquivos da interface definem a própria política.
@@ -109,7 +131,7 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
     }
   });
 
-  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()) };
+  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000) };
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });
   await app.register(customerRoutes(deps), { prefix: "/api/v1" });

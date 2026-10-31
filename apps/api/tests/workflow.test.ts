@@ -191,6 +191,21 @@ describe("fila do técnico e assumir OS (P-12)", () => {
     expect((await orderDetail(env, ownerA, orderId)).events.filter((e: { type: string }) => e.type === "os_assumida")).toHaveLength(1);
   });
 
+  it("em 10 rodadas de corrida, cada OS é assumida por exatamente um técnico", async () => {
+    const tech1 = await loginOk(env, (await addMember(env, ownerA, "tecnico", "r1")).email);
+    const tech2 = await loginOk(env, (await addMember(env, ownerA, "tecnico", "r2")).email);
+    for (let round = 0; round < 10; round++) {
+      const { orderId, version } = await setupOrder(env, ownerA);
+      const results = await Promise.all([
+        call(env, tech1, "POST", `/work-orders/${orderId}/claim`, { expectedVersion: version }),
+        call(env, tech2, "POST", `/work-orders/${orderId}/claim`, { expectedVersion: version }),
+      ]);
+      expect(results.map((r) => r.statusCode).sort(), `rodada ${round}`).toEqual([200, 409]);
+      const claims = (await orderDetail(env, ownerA, orderId)).events.filter((e: { type: string }) => e.type === "os_assumida");
+      expect(claims, `rodada ${round}`).toHaveLength(1);
+    }
+  });
+
   it("fila e assumir não atravessam empresas", async () => {
     const techB = await loginOk(env, (await addMember(env, ownerB, "tecnico")).email);
     const inA = await setupOrder(env, ownerA);

@@ -8,11 +8,14 @@ import type { AuthContext } from "../../auth-context.js";
 import type { Config } from "../../config.js";
 import { HttpError, isUniqueViolation } from "../../http-error.js";
 import { hashPassword, verifyPassword } from "../../security/password.js";
+import { accountKey, type FailureThrottle } from "../../security/throttle.js";
 import { hashToken, newToken } from "../../security/tokens.js";
 
 export interface AuthServiceDeps {
   config: Config;
   pool: pg.Pool;
+  /** Falhas de login por IP e conta. Opcional só para chamadas internas de teste. */
+  loginThrottle?: FailureThrottle;
 }
 
 export interface RequestMeta {
@@ -42,17 +45,24 @@ export async function login(
   input: { email: string; password: string; tenantId?: string },
   meta: RequestMeta,
 ): Promise<LoginResult> {
+  const key = accountKey(meta.ip, input.email);
+  // Bloqueado antes de qualquer trabalho caro (hash de senha): a resposta é igual à de um excesso de tentativas por IP.
+  if (deps.loginThrottle?.isBlocked(key)) {
+    throw new HttpError(429, "MUITAS_TENTATIVAS", "Muitas tentativas. Aguarde e tente novamente.");
+  }
   const lookup = await deps.pool.query<LoginLookupRow>("SELECT * FROM app_login_lookup($1)", [input.email]);
   const found = lookup.rows[0];
   const passwordOk = await verifyPassword(found?.password_hash ?? null, input.password);
 
   if (!found || !passwordOk || found.status !== "ativo") {
+    deps.loginThrottle?.fail(key);
     await withContext(deps.pool, {}, (db) =>
       recordAudit(db, { action: "login", outcome: "negado", correlationId: meta.correlationId, ip: meta.ip }));
     throw invalidCredentials();
   }
 
   const userId = found.id;
+  deps.loginThrottle?.reset(key);
   const memberships = await withContext(deps.pool, { userId }, (db) =>
     db
       .select({

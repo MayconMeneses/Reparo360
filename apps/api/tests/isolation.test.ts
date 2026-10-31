@@ -1,4 +1,5 @@
 import { schema, withContext } from "@reparo360/database";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { addMember, call, login, loginOk, onboard, PASSWORD, resetData, startTestEnv, type Account, type Session, type TestEnv } from "./helpers.js";
 
@@ -167,5 +168,27 @@ describe("permissões no servidor", () => {
     const owners = await withContext(env.migrator, { tenantId: a.tenantId }, (db) =>
       db.select().from(schema.memberships));
     expect(owners.filter((m) => m.role === "proprietario" && m.status === "ativo").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("regra do último proprietário sob corrida (várias rodadas)", () => {
+  // Uma rodada só raramente reproduz a corrida (as duas requisições terminam em sequência). Repetir aumenta a chance
+  // de as duas lerem "2 proprietários ativos" ao mesmo tempo; sem a trava, alguma rodada deixaria a empresa sem dono.
+  it("em 12 rodadas, a empresa nunca fica sem proprietário ativo", async () => {
+    for (let round = 0; round < 12; round++) {
+      const second = await addMember(env, ownerA, "proprietario", `dono-r${round}`);
+      const secondSession = await loginOk(env, second.email);
+      await Promise.all([
+        call(env, ownerA, "PATCH", `/team/members/${second.userId}`, { status: "desativado" }),
+        call(env, secondSession, "PATCH", `/team/members/${a.userId}`, { status: "desativado" }),
+      ]);
+      const active = await withContext(env.migrator, { tenantId: a.tenantId }, (db) => db.select().from(schema.memberships));
+      const owners = active.filter((m) => m.role === "proprietario" && m.status === "ativo");
+      expect(owners.length, `rodada ${round}`).toBeGreaterThanOrEqual(1);
+      // Prepara a próxima rodada: reativa o dono original, se a corrida o desativou.
+      await withContext(env.migrator, { tenantId: a.tenantId }, (db) =>
+        db.update(schema.memberships).set({ status: "ativo" }).where(eq(schema.memberships.userId, a.userId)));
+      ownerA = await loginOk(env, a.email);
+    }
   });
 });

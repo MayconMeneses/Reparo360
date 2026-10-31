@@ -14,6 +14,7 @@ const envSchema = z.object({
   ALLOW_PUBLIC_ONBOARDING: booleanFlag("false"),
   TRUST_PROXY: booleanFlag("false"),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  LOGIN_ACCOUNT_MAX_FAILURES: z.coerce.number().int().positive().default(8),
   PORTAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   LOG_LEVEL: z.enum(["silent", "fatal", "error", "warn", "info", "debug"]).default("info"),
 });
@@ -29,6 +30,8 @@ export interface Config {
   allowPublicOnboarding: boolean;
   trustProxy: boolean;
   loginRateLimitMax: number;
+  /** Falhas de login por IP e conta em 15 min antes de bloquear aquela combinação. */
+  loginAccountMaxFailures: number;
   portalRateLimitMax: number;
   /** Validade do link do consumidor (P-32). */
   portalLinkTtlDays: number;
@@ -53,6 +56,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowPublicOnboarding: parsed.ALLOW_PUBLIC_ONBOARDING,
     trustProxy: parsed.TRUST_PROXY,
     loginRateLimitMax: parsed.LOGIN_RATE_LIMIT_MAX,
+    loginAccountMaxFailures: parsed.LOGIN_ACCOUNT_MAX_FAILURES,
     portalRateLimitMax: parsed.PORTAL_RATE_LIMIT_MAX,
     portalLinkTtlDays: 30,
     logLevel: parsed.LOG_LEVEL,

@@ -73,3 +73,13 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-35 | Novo | Dashboard calcula o tempo por etapa em memória (até 200 mil eventos). Sem medição de desempenho; pode exigir tabela de apoio ou consulta agregada com volume real. |
 | P-36 | Novo | Aprovação/recusa pelo portal do consumidor: **continua BLOQUEADA por P-03**. O portal só informa e orienta a falar com a assistência. |
 | P-37 | Novo | Técnico sem acesso a PDFs e sem ver telefone do cliente (P-29) e a etiqueta física leva a um endereço interno: quem escaneia sem login só vê a tela de entrada. |
+
+## Atualizações da Fase 6 (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-38 | Novo (bloqueia "Fase 6 aprovada") | **Painel Master mínimo (RF-022) e MFA obrigatório do Master (SEC-014/SEC-019) não foram construídos.** Sem eles não há como criar empresa com `ALLOW_PUBLIC_ONBOARDING=false`, suspender empresa pela interface ou conceder acesso de suporte com prazo. Decidir em qual fase entra. |
+| P-39 | Novo | Pipeline de CI (testes com Postgres, `pnpm audit --prod`, scanner de segredos, CodeQL) **não existe**. Criar exige rodar no GitHub para validar e, possivelmente, mudar configurações do repositório; aguardando OK do dono. |
+| P-40 | Novo | Backup: falta copiar e conferir os arquivos de anexo, provar restauração por empresa e definir RPO/RTO (ver P-14 e `docs/security/BACKUP_RECOVERY.md`). |
+| P-41 | Novo | Prazos de comunicação de incidente (ANPD e titulares): não conferidos em fonte oficial; depende de revisão jurídica (`docs/security/INCIDENT_RESPONSE.md`). |
+| P-42 | Novo | Bloqueio de login por conta+IP fica em memória do processo; com mais de uma instância da API, cada uma conta separado. Mover para o banco se houver mais de uma instância. |
