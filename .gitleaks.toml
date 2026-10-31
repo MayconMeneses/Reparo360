@@ -11,3 +11,10 @@ condition = "AND"
 paths = ['''(^|/)apps/(api|web)/(tests|src)/.*\.test\.tsx?$''', '''(^|/)apps/api/tests/[^/]+\.ts$''']
 regexTarget = "line"
 regexes = ['''(?i)(senha|password|idempotency-key|MASTER_KEY_HEX|secret=)''']
+
+[[allowlists]]
+description = "Senhas fictícias do CI descartável e do script de medição (banco de teste, dados sintéticos)"
+condition = "AND"
+paths = ['''(^|/)\.github/workflows/ci\.yml$''', '''(^|/)scripts/perf-measure\.mjs$''']
+regexTarget = "line"
+regexes = ['''(?i)(PASSWORD|ownerPassword|password)''']

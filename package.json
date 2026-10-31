@@ -7,7 +7,7 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --workspace-concurrency=1 test",
     "build": "pnpm -r build",
     "db:generate": "pnpm --filter @reparo360/database db:generate",
     "db:migrate": "pnpm --filter @reparo360/database db:migrate",

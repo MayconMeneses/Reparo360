@@ -66,13 +66,26 @@ export async function buildApp({ config, pool, storage, clock, mailer, logStream
   });
 
   // Em desenvolvimento (http://localhost) o padrão "upgrade-insecure-requests" quebraria os recursos; em produção segue ativo.
-  await app.register(helmet, config.cookieSecure ? {} : { contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } } });
+  // CSP: a interface não usa <style> embutido nem fontes externas. Estilos só do próprio site; 'unsafe-inline' fica
+  // restrito a ATRIBUTOS style="" (a interface usa), nunca a blocos <style>. Fontes só locais.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        styleSrc: ["'self'"],
+        styleSrcAttr: ["'unsafe-inline'"],
+        fontSrc: ["'self'"],
+        ...(config.cookieSecure ? {} : { upgradeInsecureRequests: null }),
+      },
+    },
+  });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
   app.decorateRequest("auth", null);
 
   app.addHook("onRequest", async (request, reply) => {
     reply.header("x-request-id", request.id);
+    // Recursos do navegador que o sistema não usa ficam desligados; a câmera é liberada só para o próprio site (leitura de QR).
+    reply.header("permissions-policy", "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()");
     // Defesa em profundidade contra CSRF (além de SameSite=Strict e do token): requisição que altera dados e vem
     // de OUTRA origem é recusada. Sem o cabeçalho Origin (ferramentas, testes) segue para as demais barreiras.
     const origin = request.headers.origin;

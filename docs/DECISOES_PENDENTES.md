@@ -122,3 +122,14 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-40 | **Atendido em parte** | Backup completo com anexos e verificação por SHA-256 (`pnpm backup` / `pnpm backup:verify`). Faltam: criptografia, cópia externa/agendamento, retenção e restauração por empresa. |
 | P-52 | Novo | DAST (ZAP) contra o servidor local: não executado. Precisa baixar uma imagem grande e montar a varredura autenticada; decidir se vale a pena antes de hospedar (P-01). |
 | P-53 | Novo | As ações do GitHub estão fixadas por tag de versão (`@v4`), não por SHA de commit; fixar por SHA é mais seguro contra troca de tag. |
+
+## Pendências restantes depois do fechamento (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-39 | **Em correção** | Primeira execução do CI: CodeQL passou; qualidade e segredos falharam. Corrigi as causas que consegui reproduzir (ver `SECURITY_TEST_PLAN.md`); só a próxima execução confirma. |
+| P-40 | Atendido em parte | Backup cifrado opcional (`--encrypt`) feito. Faltam cópia externa/agendamento, retenção, imutabilidade e restauração por empresa. |
+| P-52 | **Feito (passivo)** | DAST ZAP de linha de base: 0 falhas, 4 avisos baixos/informativos. Falta varredura autenticada e ativa, e em ambiente com HTTPS. |
+| P-48 | **Precisa de decisão** | Códigos de recuperação do Master: não fiz. Eles enfraquecem a segurança do MFA (um código guardado passa a ser uma chave) e exigem decidir onde e como o dono os guarda. Hoje a recuperação é pelo script no servidor. |
+| P-47 | **Precisa de decisão** | Acesso de suporte a dados de uma empresa (com prazo, escopo e auditoria): é um recurso novo de segurança que muda o que o Master pode ver; só construo se você quiser. |
+| P-01, P-06, P-41, P-14 | Dependem do dono | Hospedagem/HTTPS, textos jurídicos e prazos legais, e metas de backup (RPO/RTO). |

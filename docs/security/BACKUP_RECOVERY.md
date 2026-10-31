@@ -13,10 +13,17 @@ Estado em 2026-10-31. Só vale o que está marcado como verificado.
 - Testado por `apps/api/tests/backup.test.ts` (6 testes) e por mutação (4 de 4 mortas).
 - Para o sistema instalado, o banco é `reparo360_dev` e os anexos ficam em `STORAGE_DIR` do `.env`.
 
+## Backup cifrado — `BACKUP_PASSPHRASE=... pnpm backup --encrypt`
+- AES-256-GCM em cada arquivo (banco e anexos), chave derivada da senha com scrypt (sal aleatório guardado no manifesto, junto de uma marca que recusa senha errada antes de mexer em qualquer arquivo). Nenhum arquivo em claro sobra na pasta; qualquer byte alterado é detectado.
+- A senha vai **só por variável de ambiente** (mínimo de 12 caracteres), nunca em argumento nem no manifesto. **Quem perde a senha perde o backup: não há recuperação.**
+- `BACKUP_PASSPHRASE=... pnpm backup:verify <pasta>` decifra numa área temporária (apagada no fim), confere SHA-256 e restaura num banco descartável.
+- O manifesto continua em claro: mostra nomes de arquivos de anexo (identificadores), tamanhos, SHA-256 do conteúdo e contagens por tabela. Não mostra conteúdo.
+- Testado por `backup-encrypted.test.ts` (5 testes) e 4 mutações mortas. Não testado: desempenho com backups de vários GB (os arquivos são processados em fluxo, mas não medi).
+
 ## O que NÃO está coberto (lacunas reais)
 1. ~~Anexos fora do backup~~ **Resolvido** por `pnpm backup` (acima). Continua: a cópia fica no mesmo computador até você levá-la a outro lugar; não há agendamento automático.
 2. **Restauração por empresa** (restaurar só a empresa A sem tocar na B): **NOT_IMPLEMENTED**. A restauração é do banco inteiro; restaurar uma empresa exigiria uma ferramenta própria de exportação e reimportação por tenant.
-3. **Criptografia e imutabilidade do backup** (exigidas por SEC-016): o backup **não é criptografado**. Guarde-o em disco criptografado (BitLocker) ou em local protegido; imutabilidade depende de onde for guardado (P-14 / P-01). NOT_IMPLEMENTED.
+3. **Imutabilidade do backup** (SEC-016) depende de onde ele for guardado (P-14 / P-01): NOT_IMPLEMENTED. A criptografia existe, mas é opcional (`--encrypt`); sem ela o backup fica em claro.
 4. **RPO e RTO** (quanto de dado se aceita perder e em quanto tempo se volta) ficam em aberto em P-14. Sem esses números não há meta a verificar.
 5. **Teste periódico de restauração** não está agendado; só roda manualmente.
 

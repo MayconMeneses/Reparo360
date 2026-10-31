@@ -82,6 +82,13 @@ describe("interface servida pela API", () => {
     const page = await get(env, "/");
     expect(page.headers["x-content-type-options"]).toBe("nosniff");
     expect(page.headers["content-security-policy"]).toContain("default-src 'self'");
+    const csp = String(page.headers["content-security-policy"]);
+    expect(csp).toContain("style-src 'self';"); // sem https: genérico e sem unsafe-inline em blocos <style>
+    expect(csp).toContain("style-src-attr 'unsafe-inline'");
+    expect(csp).toContain("font-src 'self';");
+    expect(csp).not.toMatch(/style-src [^;]*unsafe-inline/);
+    expect(page.headers["permissions-policy"]).toContain("camera=(self)");
+    expect(page.headers["permissions-policy"]).toContain("microphone=()");
     expect(page.headers["x-frame-options"]).toBeTruthy();
     expect((await get(env, "/health")).headers["cache-control"]).toBe("no-store");
   });
