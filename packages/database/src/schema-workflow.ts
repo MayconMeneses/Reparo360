@@ -165,12 +165,15 @@ export const workOrderEvents = pgTable(
     /** Nulo apenas em eventos do sistema (expiração automática); nunca se atribui a uma pessoa que não agiu. */
     actorUserId: uuid("actor_user_id").references(() => users.id),
     reason: text("reason"),
+    /** Quem originou o evento: equipe (com ator), sistema (expiração) ou cliente (decisão verificada por código). */
+    origin: text("origin").notNull().default("equipe"),
     createdAt: createdAt(),
   },
   (t) => [
     foreignKey({ name: "events_work_order_fk", columns: [t.tenantId, t.workOrderId], foreignColumns: [workOrders.tenantId, workOrders.id] }),
     index("events_work_order_idx").on(t.tenantId, t.workOrderId, t.createdAt),
-    check("events_actor_ck", sql`${t.actorUserId} is not null or ${t.type} = 'orcamento_expirado'`),
+    check("events_actor_ck", sql`${t.actorUserId} is not null or ${t.type} = 'orcamento_expirado' or (${t.origin} = 'cliente' and ${t.type} in ('orcamento_aprovado', 'orcamento_recusado'))`),
+    check("events_origin_ck", sql`${t.origin} in ('equipe', 'sistema', 'cliente') and (${t.origin} <> 'cliente' or (${t.actorUserId} is null and ${t.type} in ('orcamento_aprovado', 'orcamento_recusado')))`),
   ],
 );
 

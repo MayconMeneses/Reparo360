@@ -33,7 +33,7 @@ export function assertTransitionAllowed(order: WorkOrderRow, action: TransitionA
  */
 export async function applyTransition(
   db: Db,
-  input: { actor: AuthContext | null; order: WorkOrderRow; action: TransitionAction; reason?: string },
+  input: { actor: AuthContext | null; order: WorkOrderRow; action: TransitionAction; reason?: string; origin?: "cliente" },
 ): Promise<AppliedTransition> {
   const { actor, order, action } = input;
   assertTransitionAllowed(order, action, actor);
@@ -67,6 +67,7 @@ export async function applyTransition(
     toState: rule.to,
     actorUserId: actor?.userId,
     reason,
+    origin: input.origin ?? (actor ? "equipe" : "sistema"),
   });
   return { state: rule.to, version: updated.version };
 }

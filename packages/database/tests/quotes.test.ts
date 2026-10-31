@@ -198,6 +198,56 @@ describe("eventos de sistema e isolamento", () => {
     expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("os_cancelada"))))).toBe("23514");
   });
 
+  it("evento do cliente só existe como aprovação ou recusa, e só com origem 'cliente' e sem ator", async () => {
+    const event = (type: string, extra: Record<string, unknown> = {}) => ({ tenantId: f.tenantA, workOrderId: ids.orderA, type, ...extra });
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("orcamento_aprovado", { origin: "cliente" }))))).toBeUndefined();
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("orcamento_recusado", { origin: "cliente" }))))).toBeUndefined();
+    // Origem 'cliente' em outro tipo, ou com ator, ou sem origem (equipe) e sem ator: tudo recusado.
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("os_cancelada", { origin: "cliente" }))))).toBe("23514");
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("orcamento_aprovado", { origin: "cliente", actorUserId: f.userA }))))).toBe("23514");
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("orcamento_aprovado"))))).toBe("23514");
+    expect(await sqlState(asAppA((db) => db.insert(schema.workOrderEvents).values(event("orcamento_aprovado", { origin: "outro", actorUserId: f.userA }))))).toBe("23514");
+  });
+
+  it("decisão remota exige código consumido e não tem autor da equipe; presencial exige autor e não tem código", async () => {
+    const ownOrder = randomUUID();
+    await asMigratorA((db) => db.insert(schema.workOrders).values({
+      id: ownOrder, tenantId: f.tenantA, protocol: "2026-000097", customerId: ids.customerA, deviceId: ids.deviceA, reportedDefect: "x", openedBy: f.userA,
+    }));
+    const quote = draft(ownOrder, 1);
+    await asMigratorA((db) => db.insert(schema.quoteVersions).values(quote));
+    await asMigratorA(update(quote.id, sentFields()));
+    const grantId = randomUUID();
+    const verificationId = randomUUID();
+    await asMigratorA(async (db) => {
+      await db.insert(schema.customerAccessGrants).values({ id: grantId, tenantId: f.tenantA, workOrderId: ownOrder, tokenHash: `h-${grantId}`, createdBy: f.userA, expiresAt: new Date(Date.now() + 86400000) });
+      await db.insert(schema.customerVerifications).values({ id: verificationId, tenantId: f.tenantA, grantId, quoteVersionId: quote.id, codeHash: "hmac-sintetico", expiresAt: new Date(Date.now() + 600000) });
+    });
+    const base = { tenantId: f.tenantA, quoteVersionId: quote.id, decision: "aprovado", confirmedByName: "Maria" };
+    const insert = (extra: Record<string, unknown> & { channel: string }) => asAppA((db) => db.insert(schema.quoteDecisions).values({ ...base, ...extra }));
+    expect(await sqlState(insert({ channel: "remoto" }))).toBe("23514");
+    expect(await sqlState(insert({ channel: "remoto", decidedBy: f.userA, verificationId }))).toBe("23514");
+    expect(await sqlState(insert({ channel: "presencial", verificationId }))).toBe("23514");
+    expect(await sqlState(insert({ channel: "presencial" }))).toBe("23514");
+    expect(await sqlState(insert({ channel: "remoto", verificationId: randomUUID() }))).toBe("23503");
+    expect(await sqlState(insert({ channel: "remoto", verificationId }))).toBeUndefined();
+  });
+
+  it("códigos do consumidor: aplicação só altera tentativas e consumo, e a empresa B não os enxerga", async () => {
+    const rows = await asMigratorA((db) => db.select().from(schema.customerVerifications));
+    const id = rows[0]?.id;
+    expect(id).toBeTruthy();
+    expect(await sqlState(asAppA((db) => db.execute(sql`UPDATE customer_verifications SET code_hash = 'x'`)))).toBe("42501");
+    expect(await sqlState(asAppA((db) => db.execute(sql`UPDATE customer_verifications SET expires_at = now()`)))).toBe("42501");
+    expect(await sqlState(asAppA((db) => db.execute(sql`UPDATE customer_verifications SET attempts = attempts + 1, consumed_at = now()`)))).toBeUndefined();
+    expect(await sqlState(asAppA((db) => db.execute(sql`DELETE FROM customer_verifications`)))).toBe("42501");
+    expect(await sqlState(asAppA((db) => db.execute(sql`UPDATE customer_verifications SET attempts = -1`)))).toBe("23514");
+    const seenByB = await withContext(pools.app, { tenantId: f.tenantB }, (db) => db.select().from(schema.customerVerifications));
+    expect(seenByB).toHaveLength(0);
+    const noContext = await withContext(pools.app, {}, (db) => db.select().from(schema.customerVerifications));
+    expect(noContext).toHaveLength(0);
+  });
+
   it("A não vê nem liga orçamento/diagnóstico de B; FK composta impede vínculo cruzado", async () => {
     expect(await sqlState(asMigratorA((db) => db.insert(schema.quoteVersions).values(draft(ids.orderB, 1))))).toBe("23503");
     expect(await sqlState(asMigratorA((db) => db.insert(schema.diagnostics).values({

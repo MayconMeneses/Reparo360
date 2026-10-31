@@ -49,6 +49,8 @@ export interface EventInput {
   fromState?: string;
   toState?: string;
   reason?: string;
+  /** Padrão: equipe. "sistema" na expiração automática; "cliente" na decisão verificada por código. */
+  origin?: "equipe" | "sistema" | "cliente";
 }
 
 export async function addEvent(db: Db, event: EventInput): Promise<void> {

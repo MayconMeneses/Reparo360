@@ -76,7 +76,9 @@ export interface ApprovalDocData {
   totalCents: number;
   decision: string;
   confirmedByName: string;
-  registeredByName: string;
+  /** Nulo na decisão remota (ninguém da equipe registrou). */
+  registeredByName: string | null;
+  channel: string;
   decidedAt: Date;
   note: string | null;
   partUnavailable: boolean;
@@ -91,10 +93,14 @@ export function buildApprovalPdf(data: ApprovalDocData): Promise<Buffer> {
       p.field("Protocolo", data.protocol);
       p.field("Orçamento", `versão ${data.quoteNumber}, total ${formatBrl(data.totalCents)}`);
       p.field("Decisão", data.decision === "aprovado" ? "APROVADO" : "RECUSADO");
-      // Nunca sugere decisão remota: só a presencial existe.
-      p.field("Forma", "Presencial, registrada por funcionário da assistência");
-      p.field("Decisão informada por", data.confirmedByName);
-      p.field("Registrada por", data.registeredByName);
+      if (data.channel === "remoto") {
+        p.field("Forma", "Remota, confirmada por código enviado ao e-mail cadastrado do cliente");
+        p.field("Decisão de", data.confirmedByName);
+      } else {
+        p.field("Forma", "Presencial, registrada por funcionário da assistência");
+        p.field("Decisão informada por", data.confirmedByName);
+        if (data.registeredByName) p.field("Registrada por", data.registeredByName);
+      }
       p.field("Data e hora", dateTime(data.decidedAt));
       if (data.partUnavailable) p.field("Observação", "Peça indisponível no momento da aprovação");
       if (data.note) p.field("Anotação", data.note);

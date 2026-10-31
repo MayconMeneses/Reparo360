@@ -48,7 +48,7 @@ function DecisionForm({ quote, reload }: { quote: Quote; reload: () => void }) {
   return (
     <form onSubmit={(e) => void submit(e)} className="card" style={{ marginTop: 16, maxWidth: 560 }} aria-labelledby="h-decisao">
       <h2 id="h-decisao">Registrar decisão do cliente (presencial)</h2>
-      <p className="muted">Fica registrada como decisão presencial, vinculada a esta versão. A aprovação à distância ainda não existe.</p>
+      <p className="muted">Fica registrada como decisão presencial, vinculada a esta versão. O cliente também pode decidir sozinho pelo link do portal, com um código enviado ao e-mail cadastrado dele (quando o envio de e-mail está configurado).</p>
       <fieldset style={{ border: 0, padding: 0 }}>
         <legend><strong>Decisão</strong></legend>
         {(["aprovado", "recusado"] as const).map((value) => (
@@ -116,7 +116,7 @@ export function QuoteTab({ order, reload }: TabProps) {
               { header: "Versão", render: (q) => `v${q.number}` },
               { header: "Situação", render: (q) => <span className="badge">{QUOTE_STATE_LABEL[q.state] ?? "Rascunho"}</span> },
               { header: "Total", render: (q) => formatBrl(q.totalCents) },
-              { header: "Decisão", render: (q) => (q.decision ? `${q.decision.decision === "aprovado" ? "Aprovado" : "Recusado"} por ${q.decision.confirmedByName} (presencial)` : "—") },
+              { header: "Decisão", render: (q) => (q.decision ? `${q.decision.decision === "aprovado" ? "Aprovado" : "Recusado"} por ${q.decision.confirmedByName} (${q.decision.channel === "remoto" ? "por código no e-mail" : "presencial"})` : "—") },
               { header: "Documentos", render: (q) => (q.state === "rascunho" ? "—" : (
                 <>
                   <a href={`/api/v1/quotes/${q.id}/document`}>Orçamento</a>{q.decision ? <> · <a href={`/api/v1/quotes/${q.id}/approval-record`}>Registro de decisão</a></> : null}

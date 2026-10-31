@@ -1,5 +1,6 @@
 import type pg from "pg";
 import type { Config } from "./config.js";
+import type { Mailer } from "./mail/mailer.js";
 import type { FailureThrottle } from "./security/throttle.js";
 import type { FileStorage } from "./modules/attachments/storage.js";
 
@@ -10,4 +11,5 @@ export interface AppServices {
   storage: FileStorage;
   clock: () => Date;
   loginThrottle: FailureThrottle;
+  mailer: Mailer;
 }

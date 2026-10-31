@@ -1,6 +1,6 @@
 import { schema, withContext } from "@reparo360/database";
 import { addDays, isClosedForChanges, type WorkOrderState } from "@reparo360/domain";
-import { and, asc, desc, eq, gt, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { recordAudit } from "../../audit.js";
 import type { AuthContext } from "../../auth-context.js";
@@ -12,6 +12,8 @@ import { requireAuth } from "../../session-guard.js";
 import type { RequestMeta } from "../identity/auth.service.js";
 import { loadOrderForActor } from "../work-orders/access.js";
 import { workOrderParams } from "../work-orders/schemas.js";
+import { decideByCode, decisionBody, remoteOffer, requestBody, requestCode } from "./portal-decision.js";
+import { invalidLink, resolveGrant } from "./portal-grant.js";
 
 const PORTAL_STATE_LABEL: Record<string, string> = {
   RECEBIDA: "Recebido pela assistência",
@@ -40,9 +42,6 @@ const PORTAL_EVENT_LABEL: Record<string, string> = {
   liberada_sem_reparo: "Pronto para retirada (sem reparo)",
   entregue: "Equipamento entregue",
 };
-
-/** Resposta única para qualquer falha de acesso: token errado, expirado, revogado, de outra OS ou OS encerrada. */
-const invalidLink = () => new HttpError(404, "LINK_INVALIDO", "Link inválido ou expirado.");
 
 export async function createPortalLink(deps: AppServices, auth: AuthContext, orderId: string, meta: RequestMeta) {
   return withContext(deps.pool, { tenantId: auth.tenantId, userId: auth.userId }, async (db) => {
@@ -85,17 +84,7 @@ export async function revokePortalLink(deps: AppServices, auth: AuthContext, ord
 
 /** Visão do consumidor: somente leitura, lista branca de campos. Sem aprovar/recusar (P-03). */
 export async function readPortal(deps: AppServices, token: string | undefined) {
-  if (!token || token.length < 20 || token.length > 100) throw invalidLink();
-  const now = deps.clock();
-  const grant = await withContext(deps.pool, { grantHash: hashToken(token) }, async (db) => {
-    const [row] = await db
-      .select()
-      .from(schema.customerAccessGrants)
-      .where(and(isNull(schema.customerAccessGrants.revokedAt), gt(schema.customerAccessGrants.expiresAt, now)))
-      .limit(1);
-    return row;
-  });
-  if (!grant) throw invalidLink();
+  const grant = await resolveGrant(deps, token);
 
   const view = await withContext(deps.pool, { tenantId: grant.tenantId }, async (db) => {
     const [order] = await db
@@ -129,11 +118,17 @@ export async function readPortal(deps: AppServices, token: string | undefined) {
           .where(and(eq(schema.quoteItems.tenantId, grant.tenantId), eq(schema.quoteItems.quoteVersionId, quote.id)))
           .orderBy(asc(schema.quoteItems.position))
       : [];
-    return { order, tenant, device, events, quote, items };
+    const [customer] = await db
+      .select({ email: schema.customers.email })
+      .from(schema.customers)
+      .where(and(eq(schema.customers.tenantId, grant.tenantId), eq(schema.customers.id, order.customerId)))
+      .limit(1);
+    return { order, tenant, device, events, quote, items, customerEmail: customer?.email ?? null };
   });
   if (!view?.tenant) throw invalidLink();
 
   const state = view.order.state as WorkOrderState;
+  const offer = remoteOffer(deps, view.order, view.quote ?? undefined, view.customerEmail);
   return {
     protocol: view.order.protocol,
     state: { code: state, label: PORTAL_STATE_LABEL[state] ?? "Em andamento" },
@@ -153,9 +148,12 @@ export async function readPortal(deps: AppServices, token: string | undefined) {
           items: view.items,
         }
       : null,
-    // Aprovar/recusar pelo portal depende da decisão P-03 (canal de verificação). Até lá, só orientação.
-    canDecide: false,
-    decisionMessage: "Para aprovar ou recusar o orçamento, fale com a assistência.",
+    // Aprovar/recusar à distância exige código enviado ao e-mail cadastrado (P-03). Sem isso, só orientação.
+    canDecide: offer.available,
+    emailHint: offer.emailHint,
+    decisionMessage: offer.available
+      ? "Para aprovar ou recusar, peça o código que enviaremos ao seu e-mail cadastrado."
+      : "Para aprovar ou recusar o orçamento, fale com a assistência.",
     readyForPickup: state === "PRONTA_RETIRADA" || state === "PRONTA_RETIRADA_SEM_REPARO",
     closed: isClosedForChanges(state),
   };
@@ -176,7 +174,28 @@ export function portalRoutes(deps: AppServices) {
       return reply.code(204).send();
     });
 
+    const tokenOf = (header: unknown) => (typeof header === "string" ? header : undefined);
+    const noStore = { "referrer-policy": "no-referrer", "x-robots-tag": "noindex, nofollow, noarchive" };
+
     // Público e sem cookie: o token vem num CABEÇALHO (nunca na URL), lido do fragmento pelo navegador.
+    app.post(
+      "/portal/verification",
+      { config: { rateLimit: { max: deps.config.portalRateLimitMax, timeWindow: "1 minute" } } },
+      async (request, reply) => {
+        requestBody.parse(request.body ?? {});
+        return reply.code(202).headers(noStore).send(await requestCode(deps, tokenOf(request.headers["x-portal-token"])));
+      },
+    );
+
+    app.post(
+      "/portal/decision",
+      { config: { rateLimit: { max: deps.config.portalRateLimitMax, timeWindow: "1 minute" } } },
+      async (request, reply) => {
+        const body = decisionBody.parse(request.body);
+        return reply.headers(noStore).send(await decideByCode(deps, tokenOf(request.headers["x-portal-token"]), body));
+      },
+    );
+
     app.get(
       "/portal/order",
       { config: { rateLimit: { max: deps.config.portalRateLimitMax, timeWindow: "1 minute" } } },

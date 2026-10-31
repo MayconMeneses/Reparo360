@@ -39,6 +39,7 @@ describe("catálogo do banco", () => {
       "attachments",
       "audit_events",
       "customer_access_grants",
+      "customer_verifications",
       "customers",
       "deliveries",
       "devices",

@@ -71,6 +71,13 @@
       "when": 1793391533322,
       "tag": "0009_rls_fase5",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793446720363,
+      "tag": "0010_fase6_aprovacao_remota",
+      "breakpoints": true
     }
   ]
 }

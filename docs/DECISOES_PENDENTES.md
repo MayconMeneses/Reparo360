@@ -83,3 +83,13 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-40 | Novo | Backup: falta copiar e conferir os arquivos de anexo, provar restauração por empresa e definir RPO/RTO (ver P-14 e `docs/security/BACKUP_RECOVERY.md`). |
 | P-41 | Novo | Prazos de comunicação de incidente (ANPD e titulares): não conferidos em fonte oficial; depende de revisão jurídica (`docs/security/INCIDENT_RESPONSE.md`). |
 | P-42 | Novo | Bloqueio de login por conta+IP fica em memória do processo; com mais de uma instância da API, cada uma conta separado. Mover para o banco se houver mais de uma instância. |
+
+## Atualizações da aprovação remota (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-03 | **Decidido em parte: e-mail com código.** Construído e testado com coletor em memória; **sem provedor real** | Canal escolhido pelo dono: e-mail (gratuito no código; o envio depende de um provedor SMTP). Falta: o dono escolher o provedor, criar a conta e colocar `SMTP_URL`, `MAIL_FROM` e `VERIFICATION_SECRET` no `.env`; testar entrega real e se cai em spam. Sem essas variáveis, a produção segue só presencial (falha fechada). |
+| P-36 | Atendido pelo canal de e-mail | O portal oferece aprovar/recusar só quando há envio ligado, e-mail cadastrado e orçamento enviado e vigente. A aprovação "aguardando peça" continua só presencial. |
+| P-43 | Novo (proposta técnica) | Regras do código: 6 dígitos, vale 10 min, 5 tentativas, 1 pedido por minuto e 5 por hora por link, só o código mais novo vale, enviado ao e-mail já cadastrado do cliente (nunca a outro endereço). Não validado com assistências reais nem juridicamente. |
+| P-44 | Novo | Cliente sem e-mail cadastrado só decide presencialmente. Se o e-mail estiver errado, o código vai para a pessoa errada: a assistência deve conferir o e-mail no cadastro. |
+| P-18, P-19, P-21 | Desbloqueados, **não construídos** | Convite por e-mail, resposta genérica no cadastro e recuperação de senha agora têm canal; faltam construir e testar. |

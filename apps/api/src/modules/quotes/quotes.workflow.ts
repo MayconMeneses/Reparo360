@@ -130,7 +130,7 @@ export async function reviseQuote(deps: AppServices, auth: AuthContext, quoteId:
 }
 
 /** Marca expirado e move a OS (ator do sistema: o evento fica sem autor). Sem checar papel. */
-async function expireLocked(db: Db, deps: AppServices, order: WorkOrderRow, quote: QuoteRow): Promise<void> {
+export async function expireLocked(db: Db, deps: AppServices, order: WorkOrderRow, quote: QuoteRow): Promise<void> {
   await db
     .update(schema.quoteVersions)
     .set({ state: "expirado", decidedAt: deps.clock(), updatedAt: new Date() })

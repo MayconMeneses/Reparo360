@@ -6,6 +6,7 @@ import { createPool, runMigrations, schema, withContext } from "@reparo360/datab
 import type { FastifyInstance } from "fastify";
 import type pg from "pg";
 import { buildApp } from "../src/app.js";
+import type { Mailer } from "../src/mail/mailer.js";
 import { loadConfig, type Config } from "../src/config.js";
 
 export const PASSWORD = "senha-sintetica-123";
@@ -28,7 +29,7 @@ export interface TestEnv {
   close: () => Promise<void>;
 }
 
-export async function startTestEnv(overrides: Record<string, string> = {}, clock?: () => Date, logStream?: { write(chunk: string): void }): Promise<TestEnv> {
+export async function startTestEnv(overrides: Record<string, string> = {}, clock?: () => Date, logStream?: { write(chunk: string): void }, mailer?: Mailer): Promise<TestEnv> {
   const storageDir = await mkdtemp(join(tmpdir(), "reparo360-test-"));
   await runMigrations(requireEnv("TEST_MIGRATION_DATABASE_URL"));
   const config: Config = loadConfig({
@@ -42,7 +43,7 @@ export async function startTestEnv(overrides: Record<string, string> = {}, clock
   });
   const pool = createPool(config.databaseUrl, 5);
   const migrator = createPool(requireEnv("TEST_MIGRATION_DATABASE_URL"), 2);
-  const app = await buildApp({ config, pool, clock, logStream });
+  const app = await buildApp({ config, pool, clock, logStream, mailer });
   return {
     app,
     pool,

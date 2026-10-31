@@ -107,8 +107,10 @@ export const quoteDecisions = pgTable(
     decision: text("decision").notNull(),
     /** "remoto" existe no esquema mas não é gravado até a decisão P-03. */
     channel: text("channel").notNull(),
-    /** Funcionário que registrou a decisão. */
-    decidedBy: uuid("decided_by").notNull().references(() => users.id),
+    /** Funcionário que registrou a decisão presencial. Nulo na decisão remota (vale `verificationId`). */
+    decidedBy: uuid("decided_by").references(() => users.id),
+    /** Código do consumidor consumido nesta decisão (canal remoto). */
+    verificationId: uuid("verification_id"),
     /** Nome de quem decidiu pelo cliente (aprovação presencial). */
     confirmedByName: text("confirmed_by_name").notNull(),
     note: text("note"),
@@ -120,5 +122,6 @@ export const quoteDecisions = pgTable(
     unique("quote_decisions_one_per_version").on(t.tenantId, t.quoteVersionId),
     check("quote_decisions_decision_ck", oneOf(t.decision, ["aprovado", "recusado"])),
     check("quote_decisions_channel_ck", oneOf(t.channel, ["presencial", "remoto"])),
+    check("quote_decisions_who_ck", sql`(${t.channel} = 'presencial' and ${t.decidedBy} is not null and ${t.verificationId} is null) or (${t.channel} = 'remoto' and ${t.decidedBy} is null and ${t.verificationId} is not null)`),
   ],
 );

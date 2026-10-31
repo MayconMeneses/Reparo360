@@ -26,6 +26,7 @@ import { technicianRoutes } from "./modules/team/technicians.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
+import { createMailer, type Mailer } from "./mail/mailer.js";
 import { FailureThrottle } from "./security/throttle.js";
 import { createWebHandler } from "./web-app.js";
 
@@ -34,11 +35,13 @@ export interface AppDeps {
   pool: pg.Pool;
   storage?: FileStorage;
   clock?: () => Date;
+  /** Envio de e-mail; os testes injetam um coletor em memória. Padrão: SMTP se configurado, senão desligado. */
+  mailer?: Mailer;
   /** Destino dos logs (os testes o capturam para provar que segredos não aparecem). */
   logStream?: { write(chunk: string): void };
 }
 
-export async function buildApp({ config, pool, storage, clock, logStream }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ config, pool, storage, clock, mailer, logStream }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 100 * 1024,
     genReqId: () => randomUUID(),
@@ -131,7 +134,8 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
     }
   });
 
-  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000) };
+  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000), mailer: mailer ?? createMailer(config) };
+  if (deps.mailer.enabled && !config.verificationSecret) throw new Error("VERIFICATION_SECRET é obrigatório quando o envio de e-mail está ligado");
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });
   await app.register(customerRoutes(deps), { prefix: "/api/v1" });

@@ -3,7 +3,7 @@ import { z } from "zod";
 const booleanFlag = (fallback: "true" | "false") =>
   z.enum(["true", "false"]).default(fallback).transform((value) => value === "true");
 
-const envSchema = z.object({
+const baseEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   STORAGE_DIR: z.string().min(1),
   /** Pasta do build da interface (apps/web/dist). Vazia: a API não serve a interface. */
@@ -17,6 +17,16 @@ const envSchema = z.object({
   LOGIN_ACCOUNT_MAX_FAILURES: z.coerce.number().int().positive().default(8),
   PORTAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   LOG_LEVEL: z.enum(["silent", "fatal", "error", "warn", "info", "debug"]).default("info"),
+  /** Envio de e-mail (código da aprovação remota, P-03). Sem isto, só a aprovação presencial existe. */
+  SMTP_URL: z.string().min(1).optional(),
+  MAIL_FROM: z.string().min(3).optional(),
+  /** Chave do HMAC dos códigos de verificação. Obrigatória quando há envio de e-mail. */
+  VERIFICATION_SECRET: z.string().min(32).optional(),
+});
+
+const envSchema = baseEnvSchema.superRefine((env, ctx) => {
+  if (env.SMTP_URL && !env.MAIL_FROM) ctx.addIssue({ code: "custom", path: ["MAIL_FROM"], message: "obrigatório com SMTP_URL" });
+  if (env.SMTP_URL && !env.VERIFICATION_SECRET) ctx.addIssue({ code: "custom", path: ["VERIFICATION_SECRET"], message: "obrigatório com SMTP_URL (mínimo 32 caracteres)" });
 });
 
 export interface Config {
@@ -35,6 +45,14 @@ export interface Config {
   portalRateLimitMax: number;
   /** Validade do link do consumidor (P-32). */
   portalLinkTtlDays: number;
+  smtpUrl?: string;
+  mailFrom?: string;
+  verificationSecret?: string;
+  /** Validade do código de verificação e limites contra tentativa de adivinhar (P-03). */
+  verificationTtlMs: number;
+  verificationMaxAttempts: number;
+  verificationMinIntervalMs: number;
+  verificationMaxPerHour: number;
   logLevel: "silent" | "fatal" | "error" | "warn" | "info" | "debug";
   /** Validade absoluta da sessão. */
   sessionTtlMs: number;
@@ -59,6 +77,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     loginAccountMaxFailures: parsed.LOGIN_ACCOUNT_MAX_FAILURES,
     portalRateLimitMax: parsed.PORTAL_RATE_LIMIT_MAX,
     portalLinkTtlDays: 30,
+    smtpUrl: parsed.SMTP_URL,
+    mailFrom: parsed.MAIL_FROM,
+    verificationSecret: parsed.VERIFICATION_SECRET,
+    verificationTtlMs: 10 * 60 * 1000,
+    verificationMaxAttempts: 5,
+    verificationMinIntervalMs: 60 * 1000,
+    verificationMaxPerHour: 5,
     logLevel: parsed.LOG_LEVEL,
     sessionTtlMs: 12 * 60 * 60 * 1000,
     sessionIdleMs: 2 * 60 * 60 * 1000,

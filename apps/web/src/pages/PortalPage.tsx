@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatBrl, formatDateTime, QUOTE_STATE_LABEL, tokenFromHash } from "../format";
+import { PortalDecision } from "./PortalDecision";
 
 interface PortalView {
   protocol: string;
@@ -12,6 +13,8 @@ interface PortalView {
     paymentTerms: string | null; estimatedDays: number | null; items: Array<{ kind: string; description: string; quantity: number; unitPriceCents: number }>;
   } | null;
   decisionMessage: string;
+  canDecide: boolean;
+  emailHint?: string;
   readyForPickup: boolean;
 }
 
@@ -24,8 +27,10 @@ type View = { kind: "loading" } | { kind: "invalid" } | { kind: "error" } | { ki
 export function PortalPage() {
   const [view, setView] = useState<View>({ kind: "loading" });
 
+  const [reload, setReload] = useState(0);
+  const token = tokenFromHash(window.location.hash);
+
   useEffect(() => {
-    const token = tokenFromHash(window.location.hash);
     if (!token) { setView({ kind: "invalid" }); return; }
     const controller = new AbortController();
     fetch("/api/v1/portal/order", { headers: { "x-portal-token": token }, credentials: "omit", signal: controller.signal }).then(
@@ -36,7 +41,7 @@ export function PortalPage() {
       () => { if (!controller.signal.aborted) setView({ kind: "error" }); },
     );
     return () => controller.abort();
-  }, []);
+  }, [token, reload]);
 
   return (
     <main className="portal" style={{ maxWidth: 720, margin: "0 auto", padding: 16 }}>
@@ -48,12 +53,12 @@ export function PortalPage() {
         </div>
       ) : null}
       {view.kind === "error" ? <p role="alert" className="state error">Não foi possível carregar agora. Tente novamente em instantes.</p> : null}
-      {view.kind === "ready" ? <Ready data={view.data} /> : null}
+      {view.kind === "ready" && token ? <Ready data={view.data} token={token} onDecided={() => setReload((n) => n + 1)} /> : null}
     </main>
   );
 }
 
-function Ready({ data }: { data: PortalView }) {
+function Ready({ data, token, onDecided }: { data: PortalView; token: string; onDecided: () => void }) {
   const q = data.quote;
   const phone = data.assistance.phone;
   return (
@@ -91,6 +96,8 @@ function Ready({ data }: { data: PortalView }) {
           {q.validUntil ? <p>Válido até {formatDateTime(q.validUntil)}</p> : null}
         </section>
       ) : null}
+
+      {data.canDecide ? <PortalDecision token={token} emailHint={data.emailHint} onDecided={onDecided} /> : null}
 
       <section className="card" aria-labelledby="p-line" style={{ marginTop: 16 }}>
         <h2 id="p-line">Andamento</h2>

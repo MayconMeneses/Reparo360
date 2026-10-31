@@ -32,3 +32,10 @@ Data: 2026-10-31. Situação: **NÃO APROVADA** (ver bloqueios). Detalhes de tes
 
 ## Escopo da conclusão
 Os testes de segurança cobrem a API e o banco locais, com dados sintéticos, em um Postgres 17.6 em Docker. Não se extrapola para produção, para outro navegador ou para outro volume de dados.
+
+## Adendo: aprovação remota por código no e-mail (P-03)
+Pedido do dono: usar e-mail (opção sem custo de código). Implementado: migração 0010 (tabela `customer_verifications`, origem do evento `cliente`, decisão remota sem autor da equipe), adaptador de e-mail (SMTP via `nodemailer`, desligado por padrão), rotas públicas `/portal/verification` e `/portal/decision`, bloco de decisão no portal e textos da equipe.
+- Testes novos: 23 na API (2 arquivos), 3 na interface, 3 no banco. Totais depois do adendo: domínio 51, web 37, API 234, banco 66 = **388 passando**; lint, typecheck, build, loc:check, `pnpm audit` (também `--prod`) e `backup:check` passaram.
+- Mutações: 3 mortas, 1 sobrevivente (reconferência do link dentro da transação). Detalhe em `SECURITY_TEST_PLAN.md`.
+- **NOT_RUN:** envio real por provedor SMTP, entrega/spam, teste em navegador real do bloco de decisão (só jsdom + axe).
+- Um erro meu no meio do caminho: o script de mutação restaurava com `git checkout`, que não funciona em arquivo novo; as mutações ficaram aplicadas e eu restaurei à mão e conferi com os testes verdes antes de refazer as medições com restauração por conteúdo.
