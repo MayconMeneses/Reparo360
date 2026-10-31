@@ -5,7 +5,7 @@
 // Limites: fica no mesmo computador até você copiá-lo para outro lugar, e a restauração é do banco INTEIRO
 // (não existe restauração de uma empresa só). SEM --encrypt o backup não é criptografado.
 // Quem perde a senha do backup cifrado perde o backup: não há recuperação.
-import { closeSync, cpSync, mkdirSync, openSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, cpSync, existsSync, mkdirSync, openSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { attachmentRows, compose, listFiles, loadEnv, parseArgs, root, sha256File, tableCounts } from "./lib/backup-common.mjs";
 import { deriveKey, encryptFile, KDF, MIN_PASSPHRASE, newSalt, verifierFor } from "./lib/backup-crypto.mjs";
@@ -30,7 +30,7 @@ const key = encrypt ? deriveKey(passphrase, salt) : null;
 
 const stamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
 const dir = resolve(args.out ?? join(root, "backups"), `completo-${dbName}-${stamp}`);
-mkdirSync(join(dir, "anexos"), { recursive: true });
+mkdirSync(dir, { recursive: true });
 
 // 1) Banco
 const dumpPath = join(dir, "banco.dump");
@@ -44,7 +44,10 @@ const dumpSha = await sha256File(dumpPath);
 
 // 2) Anexos (cópia; nunca sobrescreve)
 const source = listFiles(resolve(storage));
-cpSync(resolve(storage), join(dir, "anexos"), { recursive: true, errorOnExist: true, force: false });
+// A pasta de destino NÃO pode existir antes (no Linux o cpSync falha se ela já existir). A pasta do backup é nova,
+// então nada é sobrescrito.
+if (existsSync(resolve(storage))) cpSync(resolve(storage), join(dir, "anexos"), { recursive: true });
+else mkdirSync(join(dir, "anexos"), { recursive: true });
 
 // 3) Conferência: todo anexo registrado no banco (inclusive excluído logicamente) precisa estar na cópia, com o tamanho e o SHA-256 gravados.
 const copied = new Map(listFiles(join(dir, "anexos")).map((f) => [f.key, f]));
