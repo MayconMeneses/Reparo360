@@ -78,6 +78,13 @@
       "when": 1793446720363,
       "tag": "0010_fase6_aprovacao_remota",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793450496251,
+      "tag": "0011_fase6_master",
+      "breakpoints": true
     }
   ]
 }

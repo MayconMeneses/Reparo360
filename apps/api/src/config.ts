@@ -22,6 +22,8 @@ const baseEnvSchema = z.object({
   MAIL_FROM: z.string().min(3).optional(),
   /** Chave do HMAC dos códigos de verificação. Obrigatória quando há envio de e-mail. */
   VERIFICATION_SECRET: z.string().min(32).optional(),
+  /** Chave (64 hex = 256 bits) que cifra o segredo MFA do Master. Sem ela, as rotas do Master ficam desligadas. */
+  MASTER_ENC_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, "64 caracteres hexadecimais").optional(),
 });
 
 const envSchema = baseEnvSchema.superRefine((env, ctx) => {
@@ -48,6 +50,13 @@ export interface Config {
   smtpUrl?: string;
   mailFrom?: string;
   verificationSecret?: string;
+  /** Master: ligado só com chave de cifragem. Prazos mais curtos que os da empresa (proposta, P-45). */
+  masterEncKey?: Buffer;
+  masterSessionTtlMs: number;
+  masterIdleMs: number;
+  masterRecentAuthMs: number;
+  masterChallengeTtlMs: number;
+  masterChallengeMaxAttempts: number;
   /** Validade do código de verificação e limites contra tentativa de adivinhar (P-03). */
   verificationTtlMs: number;
   verificationMaxAttempts: number;
@@ -80,6 +89,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     smtpUrl: parsed.SMTP_URL,
     mailFrom: parsed.MAIL_FROM,
     verificationSecret: parsed.VERIFICATION_SECRET,
+    masterEncKey: parsed.MASTER_ENC_KEY ? Buffer.from(parsed.MASTER_ENC_KEY, "hex") : undefined,
+    masterSessionTtlMs: 4 * 60 * 60 * 1000,
+    masterIdleMs: 30 * 60 * 1000,
+    masterRecentAuthMs: 5 * 60 * 1000,
+    masterChallengeTtlMs: 5 * 60 * 1000,
+    masterChallengeMaxAttempts: 5,
     verificationTtlMs: 10 * 60 * 1000,
     verificationMaxAttempts: 5,
     verificationMinIntervalMs: 60 * 1000,

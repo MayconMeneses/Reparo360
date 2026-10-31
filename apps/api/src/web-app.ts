@@ -5,7 +5,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 // Endereços que a interface conhece. Qualquer outro responde 404 DE VERDADE (a mesma página, com status 404):
 // o navegador e os verificadores veem que o endereço não existe, em vez de um 200 genérico.
 const KNOWN_ROUTES = [
-  /^\/$/, /^\/portal$/, /^\/ordens$/, /^\/ordens\/[0-9a-f-]{36}$/, /^\/ordens\/nova$/, /^\/clientes$/, /^\/clientes\/novo$/, /^\/clientes\/[0-9a-f-]{36}$/, /^\/equipamentos$/, /^\/orcamentos$/, /^\/equipe$/,
+  /^\/$/, /^\/portal$/, /^\/master$/, /^\/ordens$/, /^\/ordens\/[0-9a-f-]{36}$/, /^\/ordens\/nova$/, /^\/clientes$/, /^\/clientes\/novo$/, /^\/clientes\/[0-9a-f-]{36}$/, /^\/equipamentos$/, /^\/orcamentos$/, /^\/equipe$/,
   /^\/configuracoes$/, /^\/bancada$/, /^\/etiqueta\/[0-9a-f-]{36}$/,
 ];
 

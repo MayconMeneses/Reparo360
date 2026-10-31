@@ -18,12 +18,12 @@ Os nomes abaixo são títulos de testes em `apps/api/tests` (API) e `packages/da
 | SEC-011 XSS / injeção | `web.test.ts` (cabeçalhos de segurança presentes); `customers-devices.test.ts` (% e _ tratados como texto); consultas parametrizadas por Drizzle | PARCIAL | CSP verificada por cabeçalho, não por ataque real em navegador; sem DAST |
 | SEC-012 SSRF | revisão de código: nenhuma chamada HTTP de saída com URL vinda do usuário. O único tráfego de saída é o SMTP para o servidor definido em `SMTP_URL` (configuração do dono) e o destinatário é sempre o e-mail já cadastrado do cliente, nunca um endereço enviado pelo portal (teste: corpo com e-mail extra → 400) | PASS (revisão) | |
 | SEC-013 token em log/header | `portal.test.ts` (sem referrer, sem indexação, sem cache; token fora dos logs); `logs.test.ts` (query string, corpo e cookies fora do log) | PASS | o teste de log falhou antes da correção, confirmando o vazamento de PII em query string |
-| SEC-014 acesso silencioso do Master | — | NOT_IMPLEMENTED | painel Master e grants de suporte não existem |
+| SEC-014 acesso silencioso do Master | `master-tenants.test.ts`: nenhuma resposta do Master contém dado de cliente (nome, telefone, e-mail, texto) mesmo com um cliente cadastrado; cookie do Master não abre nenhuma rota de empresa; toda ação (suspender/reativar) grava motivo e autor na trilha DA EMPRESA; `packages/database/tests/master.test.ts` (a aplicação não tem privilégio nas tabelas do Master; só a tabela de empresas ganhou política do marcador do Master) | PARCIAL | o Master só vê situação e contagens e só suspende/reativa. **Acesso de suporte a dados de uma empresa (grant com prazo e escopo) NÃO foi construído**: não existe caminho do Master aos dados de clientes. Esse marcador de operação é uma variável de sessão que o próprio código da aplicação poderia ligar: protege contra erro de rota, não contra execução arbitrária de SQL com o papel da aplicação |
 | SEC-015 dependência vulnerável | `pnpm audit` e `pnpm audit --prod` (sem vulnerabilidades conhecidas em 2026-10-31, depois de adicionar `nodemailer`); `pnpm-lock.yaml` versionado | PARCIAL | sem CI: auditoria só manual; `nodemailer` é a única dependência nova da aprovação remota |
 | SEC-016 perda de dados | `pnpm backup:check` (dump, restauração em banco descartável, contagens, políticas e RLS idênticas); testes de imutabilidade (`integrity`, `quotes`, `bench`) | PARCIAL | ver `BACKUP_RECOVERY.md`: arquivos de anexo e restauração por empresa ainda não cobertos |
 | SEC-017 corrida | `work-orders.test.ts` (10 aberturas simultâneas, mesma chave de idempotência, atribuições com a mesma versão); `workflow.test.ts` (duplo clique, 2 técnicos × 10 rodadas); `delivery.test.ts`; `quotes-decision.test.ts`; `isolation.test.ts` (último proprietário × 12 rodadas); `attachments.test.ts` (limite de 20 simultâneo) | PASS | ver mutações abaixo |
 | SEC-018 segredos expostos | `.env` e `.env.*` ignorados, só `.env.example`; nenhum `.env`/chave/pem versionado; busca por padrões de segredo literal só encontrou senhas sintéticas de teste | PARCIAL | sem scanner dedicado (gitleaks) rodado: NOT_RUN |
-| SEC-019 takeover do Master | — | NOT_IMPLEMENTED | MFA do Master depende do painel Master |
+| SEC-019 takeover do Master | `master.test.ts` e `master-units.test.ts`: sessão só nasce após senha E código (TOTP RFC 6238, vetores oficiais reproduzidos); código errado conta e esgota o desafio (5); desafio vence em 5 min e vale uma vez; código já usado ou de passo anterior é recusado; janela de ±30 s; sessão de 4 h / 30 min ociosa; ação sensível pede código novo (janela de 5 min); segredo MFA cifrado (AES-GCM) e senha Argon2; senha/código/cookie fora dos logs; bloqueio por IP+e-mail; rotas inexistentes sem `MASTER_ENC_KEY`; nenhuma rota HTTP cria Master | PASS (com ressalvas) | prazos curtos são proposta minha (P-45). **Sem códigos de recuperação:** quem perde o autenticador precisa de acesso ao servidor para recadastrar (script). Só há UM fator forte, sem segundo administrador obrigatório |
 
 ## Prova de que os testes de corrida pegam o defeito (teste de mutação manual)
 
@@ -46,7 +46,17 @@ Aprovação remota (mesma técnica, restaurando o arquivo pelo conteúdo guardad
 | não conferir se a versão do orçamento ainda está enviada | MORTA |
 | não reconferir dentro da transação se o link continua ativo | **SOBREVIVEU**: a revogação antes da chamada já é pega na primeira leitura; a reconferência só protege uma corrida estreita entre as duas leituras, que nenhum teste reproduz |
 
-Limite: são mutações escolhidas à mão nas travas de concorrência e de decisão, não uma ferramenta de mutação sobre o código inteiro.
+Master (mesma técnica, restauração por conteúdo):
+
+| Mutação | Resultado |
+|---|---|
+| aceitar código de passo já usado | MORTA (teste unitário; no banco a mesma regra existe em dobro, na função `master_challenge_complete`) |
+| suspender sem exigir código recente | MORTA |
+| etapa 2 aceitar qualquer código | MORTA |
+| não exigir CSRF nos métodos que alteram | MORTA |
+| não contar o código errado | MORTA |
+
+Limite: são mutações escolhidas à mão nas travas de concorrência, de decisão e do Master, não uma ferramenta de mutação sobre o código inteiro.
 
 ## Não executado nesta fase
 

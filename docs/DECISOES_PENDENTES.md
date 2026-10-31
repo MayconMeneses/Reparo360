@@ -93,3 +93,14 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-43 | Novo (proposta técnica) | Regras do código: 6 dígitos, vale 10 min, 5 tentativas, 1 pedido por minuto e 5 por hora por link, só o código mais novo vale, enviado ao e-mail já cadastrado do cliente (nunca a outro endereço). Não validado com assistências reais nem juridicamente. |
 | P-44 | Novo | Cliente sem e-mail cadastrado só decide presencialmente. Se o e-mail estiver errado, o código vai para a pessoa errada: a assistência deve conferir o e-mail no cadastro. |
 | P-18, P-19, P-21 | Desbloqueados, **não construídos** | Convite por e-mail, resposta genérica no cadastro e recuperação de senha agora têm canal; faltam construir e testar. |
+
+## Atualizações do Master (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-38 | **Atendido em parte** | Construído: entrada do Master com senha + código do autenticador (TOTP), listar empresas (situação e contagens), suspender e reativar com motivo e código novo. **Não construído:** criar empresa pelo Master (P-46) e acesso de suporte a dados (P-47). |
+| P-45 | Novo (proposta técnica) | Prazos do Master, mais curtos que os das assistências: sessão de 4 h, 30 min sem uso, ação sensível exige código novo nos últimos 5 min, desafio de 5 min com 5 tentativas. Não validados com o dono. |
+| P-46 | Novo, **precisa de decisão** | Criar assistência pelo Master (com `ALLOW_PUBLIC_ONBOARDING=false` é o único caminho). Não construí porque, se o Master definisse a senha do primeiro proprietário, poderia entrar como ele, o que o PRD proíbe. Proposta: o servidor gera uma senha temporária mostrada uma vez, a conta fica obrigada a trocar a senha no primeiro acesso e tudo é auditado. Hoje o cadastro só acontece com `ALLOW_PUBLIC_ONBOARDING=true` ou direto no banco. |
+| P-47 | Novo | Acesso de suporte a dados de uma empresa (grant com prazo, escopo e auditoria, SEC-014): não existe. O Master não tem caminho algum aos dados de clientes. |
+| P-48 | Novo | Recuperação do Master: sem códigos de recuperação nem segundo administrador. Se o autenticador se perder, é preciso acesso ao servidor para recadastrar (`MASTER_REENROLL=true pnpm master:create`). |
+| P-49 | Novo | Status `cancelada` (retenção e exclusão de dados) não pode ser definido pelo Master; depende de decisão sobre retenção (LGPD). |

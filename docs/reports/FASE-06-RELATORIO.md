@@ -39,3 +39,11 @@ Pedido do dono: usar e-mail (opção sem custo de código). Implementado: migra�
 - Mutações: 3 mortas, 1 sobrevivente (reconferência do link dentro da transação). Detalhe em `SECURITY_TEST_PLAN.md`.
 - **NOT_RUN:** envio real por provedor SMTP, entrega/spam, teste em navegador real do bloco de decisão (só jsdom + axe).
 - Um erro meu no meio do caminho: o script de mutação restaurava com `git checkout`, que não funciona em arquivo novo; as mutações ficaram aplicadas e eu restaurei à mão e conferi com os testes verdes antes de refazer as medições com restauração por conteúdo.
+
+## Adendo: painel Master com MFA (P-38)
+Pedido do dono: criar o Master. Implementado: migração 0011 (tabelas `platform_admins`, `platform_sessions`, `platform_challenges`, sem nenhum privilégio para a aplicação; acesso só por funções restritas), TOTP próprio (RFC 6238, sem dependência nova), segredo MFA cifrado, entrada em duas etapas, listar/suspender/reativar empresas, tela em `/master` e script `pnpm master:create` (único caminho para criar um Master).
+- Testes novos: 13 (TOTP e cifragem), 20 (entrada e sessão), 15 (empresas, privacidade e privilégios) na API; 4 no banco; 4 na interface. Totais: domínio 51, web 41, API 282, banco 70 = **444 passando**; typecheck, lint, build, loc:check, `pnpm audit` (também `--prod`) e `backup:check` passaram.
+- Mutações do Master: 5 de 5 mortas.
+- **NOT_IMPLEMENTED:** criar empresa pelo Master (P-46, depende de decisão), acesso de suporte (P-47), recuperação do Master (P-48).
+- **NOT_RUN:** teste em navegador real da tela `/master`; leitura do QR/URI em aplicativo autenticador real (os códigos foram verificados contra os vetores da RFC, não contra um aplicativo); `MASTER_ENC_KEY` e senha de produção.
+- Sobre o marcador `app.master_op`: é uma variável de sessão ligada pelas funções do Master. O código da aplicação também poderia ligá-la; ela protege contra erro de rota, não contra execução arbitrária de SQL com o papel da aplicação.

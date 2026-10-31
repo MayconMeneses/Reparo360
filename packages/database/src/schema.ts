@@ -69,6 +69,8 @@ export const auditEvents = pgTable(
     targetType: text("target_type"),
     targetId: text("target_id"),
     outcome: text("outcome").notNull(),
+    /** Motivo informado em ações do Master sobre a empresa. */
+    reason: text("reason"),
     correlationId: text("correlation_id"),
     ip: text("ip"),
     createdAt: createdAt(),

@@ -26,6 +26,7 @@ import { technicianRoutes } from "./modules/team/technicians.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
+import { masterRoutes } from "./modules/master/master.routes.js";
 import { createMailer, type Mailer } from "./mail/mailer.js";
 import { FailureThrottle } from "./security/throttle.js";
 import { createWebHandler } from "./web-app.js";
@@ -137,6 +138,7 @@ export async function buildApp({ config, pool, storage, clock, mailer, logStream
   const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000), mailer: mailer ?? createMailer(config) };
   if (deps.mailer.enabled && !config.verificationSecret) throw new Error("VERIFICATION_SECRET é obrigatório quando o envio de e-mail está ligado");
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
+  if (config.masterEncKey) await app.register(masterRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });
   await app.register(customerRoutes(deps), { prefix: "/api/v1" });
   await app.register(deviceRoutes(deps), { prefix: "/api/v1" });

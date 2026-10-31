@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=../../.env src/server.ts",
+    "master:create": "tsx --env-file=../../.env src/cli/create-master.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "node build.mjs"
