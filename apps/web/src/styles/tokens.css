@@ -1,0 +1,51 @@
+/* Tokens semânticos. Claro por padrão; escuro por preferência do sistema ou escolha do usuário.
+   Os pares texto/fundo são verificados por teste (contraste WCAG AA). */
+:root {
+  color-scheme: light;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --text: #0f1a2b;
+  --muted: #455468;
+  --primary: #1250c8;
+  --on-primary: #ffffff;
+  --border: #b8c4d6;
+  --control-border: #66748a;
+  --danger: #a8231b;
+  --success: #17653a;
+  --warn: #7a4e00;
+  --radius: 10px;
+  --space: 16px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a1322;
+    --surface: #101e34;
+    --text: #e8eef9;
+    --muted: #a9b7cc;
+    --primary: #7db0ff;
+    --on-primary: #0a1322;
+    --border: #34476a;
+    --control-border: #7f93b5;
+    --danger: #ff9890;
+    --success: #78d9a3;
+    --warn: #f3c768;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a1322;
+  --surface: #101e34;
+  --text: #e8eef9;
+  --muted: #a9b7cc;
+  --primary: #7db0ff;
+  --on-primary: #0a1322;
+  --border: #34476a;
+  --control-border: #7f93b5;
+  --danger: #ff9890;
+  --success: #78d9a3;
+  --warn: #f3c768;
+}

@@ -5,3 +5,4 @@ export * from "./identifiers.js";
 export * from "./state-machine.js";
 export * from "./quote.js";
 export * from "./testing.js";
+export * from "./metrics.js";

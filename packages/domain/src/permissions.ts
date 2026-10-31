@@ -34,6 +34,8 @@ export const PERMISSIONS = [
   "repair.update",
   "test_checklist.write",
   "delivery.register",
+  "report.operational.read",
+  "customer_access.manage",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -51,6 +53,7 @@ const FRONT_DESK: readonly Permission[] = [
   "attachment.read",
   "document.generate",
   "delivery.register",
+  "customer_access.manage",
 ];
 
 const QUOTING: readonly Permission[] = ["quote.create", "quote.read", "quote.submit", "quote.manage", "quote.decision.in_person"];
@@ -62,6 +65,7 @@ const GRANTS: Record<TenantRole, ReadonlySet<Permission>> = {
     "team.manage",
     "tenant.settings.write",
     "audit.read",
+    "report.operational.read",
     ...FRONT_DESK,
     ...QUOTING,
     "work_order.assign",

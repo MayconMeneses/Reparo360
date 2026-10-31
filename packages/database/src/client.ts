@@ -9,6 +9,8 @@ export interface DbContext {
   tenantId?: string;
   userId?: string;
   sessionHash?: string;
+  /** Hash do token do link do consumidor: único caminho de leitura sem contexto de empresa. */
+  grantHash?: string;
 }
 
 export function createPool(connectionString: string, max = 10): pg.Pool {
@@ -28,6 +30,7 @@ export async function withContext<T>(pool: pg.Pool, ctx: DbContext, fn: (db: Db)
       ["app.tenant_id", ctx.tenantId],
       ["app.user_id", ctx.userId],
       ["app.session_hash", ctx.sessionHash],
+      ["app.grant_hash", ctx.grantHash],
     ];
     for (const [key, value] of settings) {
       if (value !== undefined) await client.query("SELECT set_config($1, $2, true)", [key, value]);

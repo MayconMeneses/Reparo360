@@ -12,12 +12,16 @@ import { authRoutes } from "./modules/identity/auth.routes.js";
 import { attachmentRoutes } from "./modules/attachments/attachments.routes.js";
 import { LocalDiskStorage, type FileStorage } from "./modules/attachments/storage.js";
 import { benchRoutes } from "./modules/bench/bench.js";
+import { dashboardRoutes } from "./modules/dashboard/dashboard.js";
 import { customerRoutes } from "./modules/customers/customers.routes.js";
 import { deliveryRoutes } from "./modules/delivery/delivery.js";
 import { deviceRoutes } from "./modules/devices/devices.routes.js";
 import { diagnosticRoutes } from "./modules/diagnostics/diagnostics.js";
 import { documentRoutes } from "./modules/documents/documents.routes.js";
+import { listRoutes } from "./modules/lists/lists.routes.js";
+import { portalRoutes } from "./modules/portal/portal.js";
 import { quoteRoutes } from "./modules/quotes/quotes.routes.js";
+import { tenantRoutes } from "./modules/tenant/tenant.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
@@ -27,9 +31,11 @@ export interface AppDeps {
   pool: pg.Pool;
   storage?: FileStorage;
   clock?: () => Date;
+  /** Destino dos logs (os testes o capturam para provar que segredos não aparecem). */
+  logStream?: { write(chunk: string): void };
 }
 
-export async function buildApp({ config, pool, storage, clock }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ config, pool, storage, clock, logStream }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 100 * 1024,
     genReqId: () => randomUUID(),
@@ -40,7 +46,8 @@ export async function buildApp({ config, pool, storage, clock }: AppDeps): Promi
         : {
             level: config.logLevel,
             // Credenciais nunca vão para o log.
-            redact: { paths: ["req.headers.cookie", "req.headers.authorization", 'req.headers["x-csrf-token"]'], remove: true },
+            redact: { paths: ["req.headers.cookie", "req.headers.authorization", 'req.headers["x-csrf-token"]', 'req.headers["x-portal-token"]'], remove: true },
+            ...(logStream ? { stream: logStream } : {}),
           },
   });
 
@@ -106,5 +113,9 @@ export async function buildApp({ config, pool, storage, clock }: AppDeps): Promi
   await app.register(quoteRoutes(deps), { prefix: "/api/v1" });
   await app.register(benchRoutes(deps), { prefix: "/api/v1" });
   await app.register(deliveryRoutes(deps), { prefix: "/api/v1" });
+  await app.register(tenantRoutes(deps), { prefix: "/api/v1" });
+  await app.register(listRoutes(deps), { prefix: "/api/v1" });
+  await app.register(dashboardRoutes(deps), { prefix: "/api/v1" });
+  await app.register(portalRoutes(deps), { prefix: "/api/v1" });
   return app;
 }

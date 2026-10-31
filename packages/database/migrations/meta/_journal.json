@@ -57,6 +57,20 @@
       "when": 1793386529841,
       "tag": "0007_rls_fase4",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793391529204,
+      "tag": "0008_fase5_portal",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793391533322,
+      "tag": "0009_rls_fase5",
+      "breakpoints": true
     }
   ]
 }

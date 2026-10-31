@@ -12,6 +12,7 @@ const envSchema = z.object({
   ALLOW_PUBLIC_ONBOARDING: booleanFlag("false"),
   TRUST_PROXY: booleanFlag("false"),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  PORTAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   LOG_LEVEL: z.enum(["silent", "fatal", "error", "warn", "info", "debug"]).default("info"),
 });
 
@@ -25,6 +26,9 @@ export interface Config {
   allowPublicOnboarding: boolean;
   trustProxy: boolean;
   loginRateLimitMax: number;
+  portalRateLimitMax: number;
+  /** Validade do link do consumidor (P-32). */
+  portalLinkTtlDays: number;
   logLevel: "silent" | "fatal" | "error" | "warn" | "info" | "debug";
   /** Validade absoluta da sessão. */
   sessionTtlMs: number;
@@ -45,6 +49,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowPublicOnboarding: parsed.ALLOW_PUBLIC_ONBOARDING,
     trustProxy: parsed.TRUST_PROXY,
     loginRateLimitMax: parsed.LOGIN_RATE_LIMIT_MAX,
+    portalRateLimitMax: parsed.PORTAL_RATE_LIMIT_MAX,
+    portalLinkTtlDays: 30,
     logLevel: parsed.LOG_LEVEL,
     sessionTtlMs: 12 * 60 * 60 * 1000,
     sessionIdleMs: 2 * 60 * 60 * 1000,

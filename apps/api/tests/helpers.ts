@@ -28,7 +28,7 @@ export interface TestEnv {
   close: () => Promise<void>;
 }
 
-export async function startTestEnv(overrides: Record<string, string> = {}, clock?: () => Date): Promise<TestEnv> {
+export async function startTestEnv(overrides: Record<string, string> = {}, clock?: () => Date, logStream?: { write(chunk: string): void }): Promise<TestEnv> {
   const storageDir = await mkdtemp(join(tmpdir(), "reparo360-test-"));
   await runMigrations(requireEnv("TEST_MIGRATION_DATABASE_URL"));
   const config: Config = loadConfig({
@@ -42,7 +42,7 @@ export async function startTestEnv(overrides: Record<string, string> = {}, clock
   });
   const pool = createPool(config.databaseUrl, 5);
   const migrator = createPool(requireEnv("TEST_MIGRATION_DATABASE_URL"), 2);
-  const app = await buildApp({ config, pool, clock });
+  const app = await buildApp({ config, pool, clock, logStream });
   return {
     app,
     pool,
@@ -271,4 +271,18 @@ export const deliveryBody = (version: number, extra: object = {}) => ({
 export async function deliver(env: TestEnv, session: Session, orderId: string, extra: object = {}) {
   const { version } = await orderDetail(env, session, orderId);
   return call(env, session, "POST", `/work-orders/${orderId}/delivery`, deliveryBody(version, extra));
+}
+
+// --- Fase 5 -----------------------------------------------------------------
+
+/** Gera o link do consumidor e devolve o token (que só existe nesta resposta). */
+export async function portalLink(env: TestEnv, session: Session, orderId: string) {
+  const res = await call(env, session, "POST", `/work-orders/${orderId}/portal-link`, {});
+  if (res.statusCode !== 201) throw new Error(`link falhou: ${res.statusCode} ${res.body}`);
+  return res.json<{ token: string; path: string; expiresAt: string }>();
+}
+
+/** Leitura pública do portal: o token vai num cabeçalho, nunca na URL. */
+export function portalRead(env: TestEnv, token?: string) {
+  return env.app.inject({ method: "GET", url: "/api/v1/portal/order", headers: token === undefined ? {} : { "x-portal-token": token } });
 }

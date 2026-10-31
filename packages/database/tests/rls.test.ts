@@ -38,6 +38,7 @@ describe("catálogo do banco", () => {
     expect(names).toEqual([
       "attachments",
       "audit_events",
+      "customer_access_grants",
       "customers",
       "deliveries",
       "devices",

@@ -9,3 +9,4 @@ allowBuilds:
 # desenvolvimento). Força a versão corrigida; remover quando o drizzle-kit atualizar.
 overrides:
   "esbuild@<0.25.0": ">=0.25.12"
+  "minimatch@<11.0.1": ">=11.0.1"
