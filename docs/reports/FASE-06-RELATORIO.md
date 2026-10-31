@@ -86,3 +86,12 @@ typecheck, lint, build, loc:check, `pnpm audit` e `--prod`: limpos. Testes: dom�
 
 ### Fase 6: estado
 **Continua NÃO aprovada para produção.** Pendentes: execução do CI no GitHub (P-39), DAST (P-52), criptografia/cópia externa do backup e restauração por empresa (P-40), acesso de suporte e recuperação do Master (P-47, P-48), hospedagem/HTTPS/criptografia em repouso (P-01) e as decisões jurídicas (P-06, P-41).
+
+## Conclusão da Fase 6 (2026-10-31)
+**Estado: concluída no escopo atual (uso local e projeto de portfólio). NÃO apta para produção com dados reais.**
+
+Entregue e verificado nesta fase: esquemas estritos e Origin (SEC-003/005), bloqueio de login por IP e conta (SEC-006), logs sem dados pessoais (SEC-013), aprovação remota por código (SEC-008), Master com MFA e criação de empresa com senha temporária (SEC-014/019, em parte), varredura de segredos no histórico e no CI (SEC-018), auditoria de dependências (SEC-015), backup com anexos e cifragem opcional (SEC-016, em parte), teste de proxy, DAST passivo (ZAP), medição de desempenho com correção do dashboard, CI no GitHub verde (qualidade, segredos e CodeQL), instalador local para Windows. Evidências, números e limites em `docs/security/SECURITY_TEST_PLAN.md` e nas seções acima.
+
+Bloqueios para produção, por decisão do dono (ver `DECISOES_PENDENTES.md`): hospedagem, HTTPS e criptografia em repouso (P-01); parte jurídica (P-06, P-41); metas de backup (P-14). Não construídos: acesso de suporte (P-47) e restauração por empresa. Não executados: teste de invasão por terceiro, varredura autenticada/ativa, teste da aprovação remota com provedor de e-mail real, instalação do PWA e leitura de QR em aparelho físico.
+
+Nota de processo: o histórico do Git foi reescrito uma vez para trocar o e-mail pessoal pelo e-mail privado do GitHub (conteúdo idêntico, verificado pelo hash da árvore de arquivos).

@@ -135,3 +135,14 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-01, P-06, P-41, P-14 | Dependem do dono | Hospedagem/HTTPS, textos jurídicos e prazos legais, e metas de backup (RPO/RTO). |
 
 | P-39 | **Atendido** | CI executado no GitHub e verde (qualidade + segredos); CodeQL verde. Ver `SECURITY_TEST_PLAN.md`. Falta fixar as ações por SHA (P-53). |
+
+## Decisões do dono em 2026-10-31 (fechamento da Fase 6)
+
+| ID | Situação | Decisão |
+|---|---|---|
+| P-48 | **Fechado por decisão** | **Sem códigos de recuperação** do Master (o dono não quer). Recuperação = script no servidor (`MASTER_REENROLL=true`) e, como recomendação, ter um segundo Master. Documentado em `instalador/LEIA-ME.md`. |
+| P-47 | **Não construído** (não pedido) | Acesso de suporte a dados de uma empresa. Se for pedido no futuro, o desenho acordado é: concessão **iniciada pelo proprietário da assistência** (nunca pelo Master), com prazo máximo (proposta: 72 h) e revogável a qualquer momento, **somente leitura**, sem dados pessoais do cliente, via funções do banco que conferem a concessão, com toda leitura gravada na auditoria da empresa. |
+| P-01 | **Adiado pelo dono** | Sem hospedagem no momento. O sistema é de uso **local** (`localhost`). HTTPS, criptografia em repouso e backup fora do computador ficam para quando houver hospedagem. |
+| P-06, P-41 | **Adiados pelo dono** | Parte jurídica (política de privacidade, termos, prazos de comunicação de incidente): não será tratada agora. |
+| P-14 | **Adiado pelo dono** | Metas de backup (RPO/RTO): não definidas agora. |
+| — | Registro | Restauração de uma única empresa a partir do backup: não construída (não pedida). |

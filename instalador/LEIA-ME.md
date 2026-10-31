@@ -40,6 +40,8 @@ Depois disso:
 `$env:MASTER_EMAIL='...'; $env:MASTER_NAME='...'; $env:MASTER_PASSWORD='...'; $env:MASTER_REENROLL='true'; pnpm master:create`
 Isso gera uma chave nova e troca a senha. É por isso que o acesso ao servidor deve ser protegido.
 
+**Recomendado:** crie um **segundo administrador Master** (rode `pnpm master:create` com outro e-mail e guarde o autenticador dele separado). Assim, perder um celular não trava a administração. Não existem códigos de recuperação de propósito: um código guardado seria uma chave que contorna o segundo fator.
+
 **Onde ficam os dados?** Banco: volume do Docker (`reparo360_pgdata`). Anexos: `%LOCALAPPDATA%\Reparo360\anexos`. Senhas e chaves: arquivo `.env`. **Faça cópia do `.env` e dos dois itens anteriores** (veja `docs/security/BACKUP_RECOVERY.md`; o backup de anexos ainda é manual).
 
 **Isto serve para colocar na internet?** Não como está. É uma instalação local (`localhost`). Para uso real em rede é preciso HTTPS, hospedagem e backup definidos (decisão P-01 em `docs/DECISOES_PENDENTES.md`).
