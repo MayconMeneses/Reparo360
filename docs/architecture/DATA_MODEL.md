@@ -88,3 +88,13 @@ Diferenças em relação ao desenho conceitual:
 - `deliveries`: uma por OS (`UNIQUE`), sem número de documento do cliente; guarda quem retirou, o método de confirmação (P-28), os acessórios devolvidos e a observação.
 - `work_orders` ganhou `repair_cycle` e `test_cycle` (contadores) e `origin_work_order_id` (retorno ou reclamação; FK composta para a própria tabela e CHECK de não apontar para si mesma).
 - `generated_documents` segue **não criada** (P-30).
+
+## Estado implementado (Fase 5)
+
+Implementado: `customer_access_grants` (link individual do consumidor).
+
+- Guarda só o **hash** SHA-256 do token (256 bits); o token existe apenas na resposta da criação.
+- Índice único parcial: no máximo **um link ativo** por OS (gerar outro revoga o anterior).
+- RLS especial: sem contexto de empresa, a linha só é visível para quem informa o hash exato (`app.grant_hash`); com a linha lida, o servidor passa a usar o contexto da empresa do link. Escrita só dentro da empresa.
+- A aplicação só pode alterar `revoked_at`; token, validade e OS são imutáveis (`GRANT UPDATE (revoked_at)`).
+- Não há tabela de configurações da empresa (`tenant_settings`): nome, nome comercial e telefone ficam em `tenants` (`GET/PATCH /tenant`).

@@ -62,3 +62,14 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-29 | Novo | Técnico não emite nenhum PDF (o comprovante e a ordem de serviço trazem telefone do cliente). A matriz prevê "ordem de serviço" para o técnico: seria preciso uma versão sem dados de contato. Desvio declarado. |
 | P-30 | Novo | Os PDFs são gerados sob demanda a partir dos registros; não são guardados nem versionados (`generated_documents` não existe). Decidir se cada emissão deve ser arquivada. |
 | P-31 | Novo | Encerramento automático após N dias da entrega (alternativa a P-17), se as assistências pedirem. |
+
+## Atualizações da Fase 5 (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-32 | Novo (proposta) | Link do consumidor: válido por **30 dias**; deixa de funcionar quando a OS é **encerrada ou cancelada**; no máximo um link ativo por OS (gerar outro revoga o anterior); o token só é mostrado uma vez. É uma proposta técnica, não validada com assistências reais nem juridicamente. |
+| P-33 | Novo | Política de privacidade e termos de uso: **BLOQUEADO por P-06**. Nenhum texto jurídico foi escrito. O sistema só usa um cookie essencial de sessão e não instala analytics; a dispensa de banner de cookies precisa de confirmação jurídica. |
+| P-34 | Novo | Instalação do PWA e câmera para ler QR exigem teste em navegador real com HTTPS (celular). O navegador do painel de desenvolvimento não suporta service worker, então isso **não foi verificado**. |
+| P-35 | Novo | Dashboard calcula o tempo por etapa em memória (até 200 mil eventos). Sem medição de desempenho; pode exigir tabela de apoio ou consulta agregada com volume real. |
+| P-36 | Novo | Aprovação/recusa pelo portal do consumidor: **continua BLOQUEADA por P-03**. O portal só informa e orienta a falar com a assistência. |
+| P-37 | Novo | Técnico sem acesso a PDFs e sem ver telefone do cliente (P-29) e a etiqueta física leva a um endereço interno: quem escaneia sem login só vê a tela de entrada. |

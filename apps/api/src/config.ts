@@ -6,6 +6,8 @@ const booleanFlag = (fallback: "true" | "false") =>
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   STORAGE_DIR: z.string().min(1),
+  /** Pasta do build da interface (apps/web/dist). Vazia: a API não serve a interface. */
+  WEB_DIST: z.string().optional(),
   HOST: z.string().default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   COOKIE_SECURE: booleanFlag("true"),
@@ -20,6 +22,7 @@ export interface Config {
   databaseUrl: string;
   /** Pasta privada dos anexos: fora de pastas sincronizadas (OneDrive) e nunca servida diretamente. */
   storageDir: string;
+  webDist?: string;
   host: string;
   port: number;
   cookieSecure: boolean;
@@ -43,6 +46,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     databaseUrl: parsed.DATABASE_URL,
     storageDir: parsed.STORAGE_DIR,
+    webDist: parsed.WEB_DIST,
     host: parsed.HOST,
     port: parsed.PORT,
     cookieSecure: parsed.COOKIE_SECURE,

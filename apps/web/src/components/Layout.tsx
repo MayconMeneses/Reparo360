@@ -6,9 +6,10 @@ import { ROLE_LABEL } from "../format";
 import { applyTheme, readTheme, type ThemePreference } from "../theme";
 
 // Só entram itens que têm tela e endpoint de verdade (spec 19.3: sem botões falsos).
-// Fora do menu, de propósito: Relatórios (o Dashboard já cobre os indicadores do MVP) e Bancada/QR (próxima etapa).
+// Fora do menu, de propósito: Relatórios (o Dashboard já cobre os indicadores do MVP).
 const MENU: Array<{ to: string; label: string; permission: Permission; end?: boolean }> = [
   { to: "/", label: "Dashboard", permission: "report.operational.read", end: true },
+  { to: "/bancada", label: "Bancada", permission: "work_order.claim" },
   { to: "/ordens", label: "Ordens", permission: "work_order.read" },
   { to: "/clientes", label: "Clientes", permission: "customer.read" },
   { to: "/equipamentos", label: "Equipamentos", permission: "device.read" },

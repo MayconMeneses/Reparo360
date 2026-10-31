@@ -1,7 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import { Empty, Remote } from "../components/parts";
 import { formatBrl, formatDateTime, QUOTE_STATE_LABEL, stateLabel } from "../format";
+import { useAuth } from "../auth";
 import { useApi } from "../useApi";
+import { PortalLinkPanel } from "./PortalLinkPanel";
 
 interface Detail {
   protocol: string;
@@ -21,6 +23,7 @@ interface Detail {
 
 export function OrderDetailPage() {
   const { id } = useParams();
+  const { can } = useAuth();
   const state = useApi<Detail>(id ? `/work-orders/${encodeURIComponent(id)}` : null);
   return (
     <>
@@ -59,6 +62,17 @@ export function OrderDetailPage() {
               {o.quotes.map((q) => <p key={q.id}>Versão {q.number}: {QUOTE_STATE_LABEL[q.state] ?? "Rascunho"} · {formatBrl(q.totalCents)}</p>)}
               <p className="muted">{o.repairs.length} tarefa(s) de reparo registrada(s).</p>
             </section>
+            {id ? <PortalLinkPanel orderId={id} closed={o.state === "ENCERRADA" || o.state === "CANCELADA"} /> : null}
+            {id && can("document.generate") ? (
+              <section className="card" aria-labelledby="h-docs" style={{ marginTop: 16 }}>
+                <h2 id="h-docs">Documentos e etiqueta</h2>
+                <ul>
+                  <li><a href={`/api/v1/work-orders/${id}/documents/receipt`}>Comprovante de recebimento (PDF)</a></li>
+                  <li><a href={`/api/v1/work-orders/${id}/documents/sheet`}>Ordem de serviço (PDF)</a></li>
+                  <li><Link to={`/etiqueta/${id}`}>Etiqueta com QR Code</Link></li>
+                </ul>
+              </section>
+            ) : null}
             <section className="card" aria-labelledby="h-hist" style={{ marginTop: 16 }}>
               <h2 id="h-hist">Histórico</h2>
               <ol>

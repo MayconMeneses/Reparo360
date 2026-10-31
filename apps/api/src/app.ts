@@ -25,6 +25,7 @@ import { tenantRoutes } from "./modules/tenant/tenant.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
+import { createWebHandler } from "./web-app.js";
 
 export interface AppDeps {
   config: Config;
@@ -51,7 +52,8 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
           },
   });
 
-  await app.register(helmet);
+  // Em desenvolvimento (http://localhost) o padrão "upgrade-insecure-requests" quebraria os recursos; em produção segue ativo.
+  await app.register(helmet, config.cookieSecure ? {} : { contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } } });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
   app.decorateRequest("auth", null);
@@ -60,7 +62,8 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
     reply.header("x-request-id", request.id);
   });
   app.addHook("onSend", async (_request, reply) => {
-    reply.header("cache-control", "no-store");
+    // Respostas da API nunca são guardadas; arquivos da interface definem a própria política.
+    if (!reply.hasHeader("cache-control")) reply.header("cache-control", "no-store");
   });
 
   app.setErrorHandler((error, request, reply) => {
@@ -88,8 +91,12 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
     return reply.code(500).send({ error: { code: "ERRO_INTERNO", message: "Erro interno.", correlationId: request.id } });
   });
 
-  app.setNotFoundHandler((_request, reply) =>
-    reply.code(404).send({ error: { code: "NAO_ENCONTRADO", message: "Recurso não encontrado." } }));
+  const webHandler = config.webDist ? await createWebHandler(config.webDist) : null;
+  app.setNotFoundHandler((request, reply) => {
+    const isWebRequest = webHandler && (request.method === "GET" || request.method === "HEAD") && !request.url.startsWith("/api/");
+    if (isWebRequest) return webHandler(request, reply);
+    return reply.code(404).send({ error: { code: "NAO_ENCONTRADO", message: "Recurso não encontrado." } });
+  });
 
   app.get("/health", async () => ({ status: "ok" }));
   app.get("/health/ready", async (_request, reply) => {

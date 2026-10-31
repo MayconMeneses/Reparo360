@@ -16,6 +16,7 @@ button, .button { font: inherit; min-height: 44px; min-width: 44px; padding: 8px
 button.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); font-weight: 600; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 input, select { font: inherit; min-height: 44px; width: 100%; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--control-border); background: var(--surface); color: var(--text); }
+summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
 label { display: block; font-weight: 600; margin: 12px 0 4px; }
 
 .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
@@ -49,3 +50,9 @@ caption { text-align: left; font-weight: 600; padding: 8px 0; }
 
 /* Movimento reduzido: sem transições. */
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+@media print {
+  .sidebar, .topbar, .no-print, .skip-link { display: none !important; }
+  .shell { display: block; }
+  body { background: #fff; color: #000; }
+}
