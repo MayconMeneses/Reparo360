@@ -1,20 +1,20 @@
-# Configuração do gitleaks. Mantém as regras padrão e libera SÓ valores sintéticos dentro de arquivos de teste
-# (senhas fictícias, chave fixa de teste, semente pública da RFC 6238). Segredo em qualquer outro lugar continua sendo apontado.
+# Configuração do gitleaks. Mantém as regras padrão e libera SÓ valores fictícios conhecidos, pelo CONTEÚDO do valor
+# e em qualquer pasta. Não se libera por pasta: nesta versão do gitleaks um caminho liberado passa qualquer segredo
+# colado ali (testado), então um segredo real em teste, script ou workflow continua sendo apontado.
 title = "Reparo360"
 
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "Valores sintéticos em testes (nenhum é segredo real)"
-condition = "AND"
-paths = ['''(^|/)apps/(api|web)/(tests|src)/.*\.test\.tsx?$''', '''(^|/)apps/api/tests/[^/]+\.ts$''']
-regexTarget = "line"
-regexes = ['''(?i)(senha|password|idempotency-key|MASTER_KEY_HEX|secret=)''']
-
-[[allowlists]]
-description = "Senhas fictícias do CI descartável e do script de medição (banco de teste, dados sintéticos)"
-condition = "AND"
-paths = ['''(^|/)\.github/workflows/ci\.yml$''', '''(^|/)scripts/perf-measure\.mjs$''', '''(^|/)scripts/dast-baseline\.mjs$''']
-regexTarget = "line"
-regexes = ['''(?i)(PASSWORD|ownerPassword|password|MASTER_ENC_KEY)''']
+description = "Valores fictícios de testes, do CI descartável e de scripts de medição (nenhum é segredo real)"
+regexTarget = "secret"
+regexes = [
+  # Chave de 256 bits de teste (0123…cdef) e semente pública do Apêndice B da RFC 6238.
+  '''^0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef$''',
+  '''^GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ$''',
+  # Senhas e segredos fictícios (contêm palavras como "senha", "sintético", "segredo", "errada", "temporária"...).
+  '''(?i)^[a-z0-9_-]*(sintetic|senha|segredo|errada|temporaria|definitiva|vazar)[a-z0-9_-]*$''',
+  # Chaves de idempotência de teste.
+  '''^(abertura|corrida|reuso)-[0-9]+$''',
+]
