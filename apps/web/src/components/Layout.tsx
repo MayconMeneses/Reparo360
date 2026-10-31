@@ -15,6 +15,7 @@ const MENU: Array<{ to: string; label: string; permission: Permission; end?: boo
   { to: "/equipamentos", label: "Equipamentos", permission: "device.read" },
   { to: "/orcamentos", label: "Orçamentos", permission: "quote.read" },
   { to: "/equipe", label: "Equipe", permission: "team.manage" },
+  { to: "/auditoria", label: "Auditoria", permission: "audit.read" },
   { to: "/configuracoes", label: "Configurações", permission: "tenant.settings.write" },
 ];
 

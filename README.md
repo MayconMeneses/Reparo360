@@ -31,8 +31,9 @@ O Reparo360 foi concebido para lojas de manutenção de celulares, computadores,
 - **Isolamento de dados:** autorização por função e políticas de Row Level Security (RLS) no PostgreSQL, com testes documentados.
 - **Integridade de fluxo:** transições controladas de ordens, eventos auditáveis e tratamento de operações repetidas.
 - **Portal com acesso restrito:** token individual revogável; o consumidor acompanha a OS e, quando a assistência configura o envio de e-mail, aprova ou recusa o orçamento com um código de uso único enviado ao e-mail cadastrado.
+- **Auditoria consultável:** proprietário e gerente veem quem fez o quê (sem IP nem identificadores internos), com filtros e paginação.
 - **Administração da plataforma (Master):** área separada, com senha e segundo fator (TOTP); lista, suspende e reativa assistências e cria novas com senha temporária de troca obrigatória. Não tem acesso a dados de clientes.
-- **Qualidade verificável:** testes automatizados contra PostgreSQL real (478 na última execução local, em 2026-10-31), tipos, lint, limite de tamanho de arquivo, build, auditoria de dependências, varredura de segredos (gitleaks) e CodeQL, executados no GitHub Actions a cada envio. Resultado de uma execução não é garantia de ausência de defeitos.
+- **Qualidade verificável:** testes automatizados contra PostgreSQL real (490 na última execução local, em 2026-10-31), tipos, lint, limite de tamanho de arquivo, build, auditoria de dependências, varredura de segredos (gitleaks) e CodeQL, executados no GitHub Actions a cada envio. Resultado de uma execução não é garantia de ausência de defeitos.
 - **Backup verificável:** backup de banco e anexos, com conferência por SHA-256, opção de cifragem e prova de restauração em banco descartável.
 - **Instalação local no Windows:** `Instalar-Reparo360.exe` (guia em `instalador/LEIA-ME.md`). Os executáveis não são assinados digitalmente.
 - **Interface por papel:** as telas e ações mudam conforme a função (proprietário, gerente, atendente, técnico), mas quem decide é sempre o servidor.

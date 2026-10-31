@@ -31,7 +31,7 @@ const get = (e: TestEnv, url: string) => e.app.inject({ method: "GET", url });
 
 describe("interface servida pela API", () => {
   it("rotas conhecidas respondem 200 com a página, sem cache", async () => {
-    for (const url of ["/", "/portal", "/ordens", `/ordens/${randomUUID()}`, "/clientes", "/equipamentos", "/orcamentos", "/equipe", "/configuracoes", "/bancada", `/etiqueta/${randomUUID()}`]) {
+    for (const url of ["/", "/portal", "/ordens", `/ordens/${randomUUID()}`, "/clientes", "/equipamentos", "/orcamentos", "/equipe", "/auditoria", "/master", "/configuracoes", "/bancada", `/etiqueta/${randomUUID()}`]) {
       const res = await get(env, url);
       expect(res.statusCode, url).toBe(200);
       expect(res.headers["content-type"], url).toContain("text/html");

@@ -59,3 +59,7 @@ caption { text-align: left; font-weight: 600; padding: 8px 0; }
 
 /* Links dentro de barras de ação têm o mesmo alvo de toque mínimo (44 px) dos botões. */
 .actions > a, .actions > div > a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* Filtros de listagens (Auditoria) */
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; }
+.filters label { font-weight: 600; }

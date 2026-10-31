@@ -95,3 +95,8 @@ Entregue e verificado nesta fase: esquemas estritos e Origin (SEC-003/005), bloq
 Bloqueios para produção, por decisão do dono (ver `DECISOES_PENDENTES.md`): hospedagem, HTTPS e criptografia em repouso (P-01); parte jurídica (P-06, P-41); metas de backup (P-14). Não construídos: acesso de suporte (P-47) e restauração por empresa. Não executados: teste de invasão por terceiro, varredura autenticada/ativa, teste da aprovação remota com provedor de e-mail real, instalação do PWA e leitura de QR em aparelho físico.
 
 Nota de processo: o histórico do Git foi reescrito uma vez para trocar o e-mail pessoal pelo e-mail privado do GitHub (conteúdo idêntico, verificado pelo hash da árvore de arquivos).
+
+## Adendo pós-fechamento: auditoria consultável (RF-023) e matriz de rastreio
+- **Lacuna do MVP encontrada e fechada:** os eventos de auditoria eram gravados, mas não havia como consultá-los (RF-023). Agora existe `GET /audit` (proprietário e gerente; filtros por ação, resultado e período; paginação; sem IP, sem ID de correlação e sem ID de ator) e a tela **Auditoria**. 8 testes na API, 4 na interface; 4 mutações mortas (permissão, rótulo da plataforma, "há mais páginas", filtro de período).
+- **Matriz de rastreio** requisito → implementação → teste → estado em `docs/product/RASTREABILIDADE.md`, que deixa explícito o que está PARCIAL (convite por e-mail, aprovação remota sem provedor real, QR em aparelho, PWA instalado, N+1, WCAG, backup não automatizado).
+- Totais depois deste adendo: domínio 51, interface 49, API 320, banco 70 = **490 passando**; typecheck, lint, tamanho de arquivo, build, `pnpm audit` e `--prod` limpos.

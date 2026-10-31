@@ -26,6 +26,7 @@ import { technicianRoutes } from "./modules/team/technicians.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
+import { auditRoutes } from "./modules/audit/audit.routes.js";
 import { masterRoutes } from "./modules/master/master.routes.js";
 import { createMailer, type Mailer } from "./mail/mailer.js";
 import { FailureThrottle } from "./security/throttle.js";
@@ -153,6 +154,7 @@ export async function buildApp({ config, pool, storage, clock, mailer, logStream
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
   if (config.masterEncKey) await app.register(masterRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });
+  await app.register(auditRoutes(deps), { prefix: "/api/v1" });
   await app.register(customerRoutes(deps), { prefix: "/api/v1" });
   await app.register(deviceRoutes(deps), { prefix: "/api/v1" });
   await app.register(workOrderRoutes(deps), { prefix: "/api/v1" });

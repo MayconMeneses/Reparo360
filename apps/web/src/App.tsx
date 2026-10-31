@@ -6,6 +6,7 @@ import { Layout } from "./components/Layout";
 import { Loading } from "./components/parts";
 import { BenchPage } from "./pages/BenchPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AuditPage } from "./pages/AuditPage";
 import { LabelPage } from "./pages/LabelPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -71,6 +72,7 @@ export function App() {
         <Route path="clientes/:id" element={<Allowed permission="customer.read"><CustomerDetailPage /></Allowed>} />
         <Route path="equipamentos" element={<Allowed permission="device.read"><DevicesPage /></Allowed>} />
         <Route path="orcamentos" element={<Allowed permission="quote.read"><QuotesPage /></Allowed>} />
+        <Route path="auditoria" element={<Allowed permission="audit.read"><AuditPage /></Allowed>} />
         <Route path="equipe" element={<Allowed permission="team.manage"><TeamPage /></Allowed>} />
         <Route path="configuracoes" element={<Allowed permission="tenant.settings.write"><SettingsPage /></Allowed>} />
         <Route path="*" element={<NotFound />} />
