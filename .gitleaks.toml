@@ -15,6 +15,6 @@ regexes = ['''(?i)(senha|password|idempotency-key|MASTER_KEY_HEX|secret=)''']
 [[allowlists]]
 description = "Senhas fictícias do CI descartável e do script de medição (banco de teste, dados sintéticos)"
 condition = "AND"
-paths = ['''(^|/)\.github/workflows/ci\.yml$''', '''(^|/)scripts/perf-measure\.mjs$''']
+paths = ['''(^|/)\.github/workflows/ci\.yml$''', '''(^|/)scripts/perf-measure\.mjs$''', '''(^|/)scripts/dast-baseline\.mjs$''']
 regexTarget = "line"
-regexes = ['''(?i)(PASSWORD|ownerPassword|password)''']
+regexes = ['''(?i)(PASSWORD|ownerPassword|password|MASTER_ENC_KEY)''']
