@@ -30,8 +30,11 @@ O Reparo360 foi concebido para lojas de manutenção de celulares, computadores,
 - **Monólito modular multiempresa:** separação entre API, interface, domínio e persistência.
 - **Isolamento de dados:** autorização por função e políticas de Row Level Security (RLS) no PostgreSQL, com testes documentados.
 - **Integridade de fluxo:** transições controladas de ordens, eventos auditáveis e tratamento de operações repetidas.
-- **Portal com acesso restrito:** token individual revogável; os relatórios da fase 5 descrevem proteção de dados e limites do acesso público.
-- **Qualidade verificável:** a última execução registrada nos relatórios ([fase 5](docs/reports/FASE-05-RELATORIO.md) e [fase 5B](docs/reports/FASE-05B-TELAS-OPERACAO.md)) teve 340 testes aprovados, mais as verificações de tipos, lint, build, auditoria de dependências e restauração de backup. Isso vale para aquela execução; a CI ainda não foi configurada.
+- **Portal com acesso restrito:** token individual revogável; o consumidor acompanha a OS e, quando a assistência configura o envio de e-mail, aprova ou recusa o orçamento com um código de uso único enviado ao e-mail cadastrado.
+- **Administração da plataforma (Master):** área separada, com senha e segundo fator (TOTP); lista, suspende e reativa assistências e cria novas com senha temporária de troca obrigatória. Não tem acesso a dados de clientes.
+- **Qualidade verificável:** testes automatizados contra PostgreSQL real (478 na última execução local, em 2026-10-31), tipos, lint, limite de tamanho de arquivo, build, auditoria de dependências, varredura de segredos (gitleaks) e CodeQL, executados no GitHub Actions a cada envio. Resultado de uma execução não é garantia de ausência de defeitos.
+- **Backup verificável:** backup de banco e anexos, com conferência por SHA-256, opção de cifragem e prova de restauração em banco descartável.
+- **Instalação local no Windows:** `Instalar-Reparo360.exe` (guia em `instalador/LEIA-ME.md`). Os executáveis não são assinados digitalmente.
 - **Interface por papel:** as telas e ações mudam conforme a função (proprietário, gerente, atendente, técnico), mas quem decide é sempre o servidor.
 - **Valores em dinheiro:** a pessoa digita em reais; o sistema guarda centavos inteiros para evitar erros de arredondamento e recalcula o total no servidor.
 
@@ -47,9 +50,11 @@ packages/
 docs/
   product/       Requisitos e fluxos do produto
   architecture/  Arquitetura e modelo de dados
-  security/      Modelo de ameaças e permissões
+  security/      Modelo de ameaças, permissões, plano de testes de segurança, backup e incidentes
   reports/       Evidências e limites de cada fase
-infra/           Ambiente local
+infra/          Ambiente local (PostgreSQL em Docker)
+instalador/     Instalador e scripts de uso local (Windows)
+scripts/        Backup, verificação de restauração e medições
 ```
 
 ## Executar verificações em ambiente de desenvolvimento
@@ -68,12 +73,13 @@ Para testes que usam banco real, prepare antes o PostgreSQL do `docker-compose.y
 
 ## Limites conhecidos — leia antes de usar
 
-- Aprovação ou recusa remota de orçamento pelo consumidor **não está habilitada**; o portal é somente leitura.
-- Verificações de instalação real do PWA, leitura de QR em aparelho físico, Lighthouse e testes E2E automatizados ainda estão pendentes nos relatórios das fases 5 e 5B. A verificação das telas novas por papel e por tamanho de tela está em andamento.
-- Existem pendências relacionadas a retenção de dados, armazenamento de arquivos, revisão jurídica, recuperação de senha e preparação para piloto.
+- A aprovação remota por e-mail **não foi testada com um provedor de e-mail real**; sem envio configurado, só existe a aprovação presencial.
+- Instalação do PWA, leitura de QR em aparelho físico, Lighthouse e testes de ponta a ponta em navegador real ainda não foram feitos.
+- Existem pendências de retenção de dados, armazenamento de arquivos fora do disco local, revisão jurídica, recuperação de senha e preparação para piloto.
+- É uma instalação **local**: hospedagem, HTTPS e criptografia em repouso ainda não foram definidos.
 - Não há declaração de conformidade formal com LGPD nem recomendação de uso em produção com dados pessoais reais.
 
-Consulte [decisões pendentes](docs/DECISOES_PENDENTES.md), [modelo de ameaças](docs/security/THREAT_MODEL.md) e [relatórios de execução](docs/reports/) antes de avançar para implantação.
+Antes de qualquer implantação, consulte as [decisões pendentes](docs/DECISOES_PENDENTES.md), o [modelo de ameaças](docs/security/THREAT_MODEL.md), o [plano de testes de segurança](docs/security/SECURITY_TEST_PLAN.md) e os [relatórios de cada fase](docs/reports/). Os limites estão ali declarados de forma aberta.
 
 ## Autor e projetos relacionados
 
