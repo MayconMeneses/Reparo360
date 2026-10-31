@@ -12,3 +12,6 @@ storage*/
 # Instalador: registros e controle do servidor local
 instalador/logs/
 instalador/.servidor.pid
+
+# Saídas geradas pelo vitest
+.vitest/
