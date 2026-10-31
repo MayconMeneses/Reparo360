@@ -40,8 +40,8 @@ const tokenOf = (text: string) => /#t=([A-Za-z0-9_-]{43})/.exec(text)?.[1] ?? ""
 describe("convite de membro por e-mail", () => {
   it("cria a conta travada, manda o link SÓ por e-mail e nunca devolve o token na resposta", async () => {
     const res = await invite();
-    expect(res.statusCode).toBe(201);
-    expect(Object.keys(res.json())).toEqual(["userId"]);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: true });
     expect(await mailCount(1)).toBe(1);
     const mail = mailer.outbox[0]!;
     const token = tokenOf(mail.text);
@@ -99,12 +99,40 @@ describe("convite de membro por e-mail", () => {
     }
   });
 
-  it("e-mail que já existe no sistema: o 409 de sempre e NENHUM e-mail é enviado a essa pessoa", async () => {
+  it("e-mail que já tem conta: a resposta é IDÊNTICA à de e-mail novo, a pessoa recebe só um aviso (sem link) e não entra na equipe", async () => {
     const other = await onboard(env, "convB");
-    const res = await invite({ email: other.email });
+    const fresh = await invite({ email: "novinha@teste.invalid" });
+    const existing = await invite({ email: other.email });
+    expect(existing.statusCode).toBe(fresh.statusCode);
+    expect(existing.body).toBe(fresh.body);
+    expect(existing.headers["content-type"]).toBe(fresh.headers["content-type"]);
+    await mailCount(2);
+    await new Promise((r) => setTimeout(r, 200));
+    const toExisting = mailer.outbox.filter((m) => m.to === other.email);
+    expect(toExisting).toHaveLength(1);
+    expect(toExisting[0]!.text).not.toMatch(/#t=|redefinir-senha|https?:\/\//); // aviso, nunca link
+    expect(tokenOf(toExisting[0]!.text)).toBe("");
+    const members = await call(env, owner, "GET", "/team");
+    expect(members.json().members.map((m: { email: string }) => m.email).sort()).toEqual([a.email, "novinha@teste.invalid"].sort());
+    const tokens = await env.migrator.query("SELECT count(*)::int AS n FROM password_tokens");
+    expect(tokens.rows[0].n).toBe(1); // só o convite da pessoa nova
+  });
+
+  it("a auditoria do convite é igual com e sem conta existente (não revela quem já tem conta)", async () => {
+    const other = await onboard(env, "convC");
+    await invite({ email: "nova1@teste.invalid" });
+    await invite({ email: other.email });
+    const events = (await call(env, owner, "GET", "/audit?action=team_member_invited")).json().events as Array<{ targetType: string | null; targetId: string | null; outcome: string }>;
+    expect(events).toHaveLength(2);
+    expect(events.every((e) => e.targetId === null && e.targetType === "user" && e.outcome === "ok")).toBe(true);
+  });
+
+  it("cadastro com senha inicial continua devolvendo 409 quando o e-mail existe (quem cadastra escolheu a senha)", async () => {
+    const other = await onboard(env, "convD");
+    const res = await call(env, owner, "POST", "/team/members", { name: "Fulana", email: other.email, password: "senha-inicial-123", role: "atendente" });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe("EMAIL_JA_CADASTRADO");
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 150));
     expect(mailer.outbox).toHaveLength(0);
   });
 

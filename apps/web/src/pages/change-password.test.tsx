@@ -58,7 +58,10 @@ describe("senha temporária no primeiro acesso", () => {
   });
 
   it("conta normal não vê a tela de troca", async () => {
-    vi.stubGlobal("fetch", () => json(200, me(false)));
+    // O app abre o Dashboard depois de entrar: o mock precisa devolver o formato real (resposta com o objeto de /me quebrava a tela, de forma intermitente).
+    vi.stubGlobal("fetch", (url: string) => (url.includes("/dashboard")
+      ? json(200, { period: { from: "2026-10-01", to: "2026-10-31" }, generatedAt: "2026-10-31T12:00:00Z", indicators: [] })
+      : json(200, me(false))));
     const { queryByRole, findAllByRole } = mount();
     await findAllByRole("navigation");
     expect(queryByRole("heading", { name: "Defina sua senha" })).toBeNull();

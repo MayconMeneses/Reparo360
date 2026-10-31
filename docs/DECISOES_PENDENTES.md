@@ -156,3 +156,9 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-19 | **Não tratado** | Cadastro de membro e de assistência ainda responde 409 quando o e-mail já existe (revela a existência da conta a quem cadastra). Na recuperação de senha essa revelação foi eliminada. |
 | P-54 | Novo | Prazos propostos: link de redefinição 30 min; convite 72 h; até 3 pedidos de redefinição por conta por hora. Não validados com o dono. |
 | P-55 | Novo | Sem auditoria do *pedido* de redefinição (só da troca concluída); sem aviso por e-mail ao dono da conta quando a senha é trocada. |
+
+## P-19 fechado onde é possível (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-19 | **Atendido em parte** | **Convite por e-mail:** a resposta (202, mesmo corpo) e a auditoria são IGUAIS com ou sem conta existente para aquele e-mail; quem já tem conta recebe um aviso sem link e não entra na equipe. **Recuperação de senha:** já era uniforme. **Continuam revelando a existência:** o cadastro com senha inicial (409), porque quem cadastra escolheu a senha e vê o resultado, e o cadastro público de assistência (desligado por padrão). Efeito colateral aceito: o convite não confirma na hora que a pessoa foi adicionada (ela só aparece na lista quando aceita o link). |

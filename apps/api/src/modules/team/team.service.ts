@@ -81,15 +81,33 @@ export async function createMember(deps: AppServices, auth: AuthContext, input: 
         actorUserId: auth.userId,
         action: invite ? "team_member_invited" : "team_member_created",
         targetType: "user",
-        targetId: userId,
+        // No convite o alvo fica fora do registro: o registro é igual quando o e-mail já tinha conta (a lista de membros mostra quem entrou).
+        targetId: invite ? undefined : userId,
         outcome: "ok",
         correlationId: meta.correlationId,
         ip: meta.ip,
       });
     });
   } catch (error) {
-    if (isUniqueViolation(error)) throw new HttpError(409, "EMAIL_JA_CADASTRADO", "Este e-mail já está cadastrado.");
-    throw error;
+    if (!isUniqueViolation(error)) throw error;
+    // Cadastro com senha inicial: quem cadastra escolheu a senha e vê o resultado, então o 409 continua.
+    if (!invite) throw new HttpError(409, "EMAIL_JA_CADASTRADO", "Este e-mail já está cadastrado.");
+    // Convite: a resposta é a MESMA exista ou não conta com esse e-mail (senão uma assistência descobriria quem tem conta em outra).
+    // Quem já tem conta recebe um aviso, sem link e sem entrar na equipe; a auditoria também é igual nos dois casos.
+    const name = await withContext(deps.pool, { tenantId: auth.tenantId, userId: auth.userId }, async (db) => {
+      const [tenant] = await db.select({ name: schema.tenants.name }).from(schema.tenants).where(eq(schema.tenants.id, auth.tenantId)).limit(1);
+      await recordAudit(db, {
+        tenantId: auth.tenantId, actorUserId: auth.userId, action: "team_member_invited", targetType: "user",
+        outcome: "ok", correlationId: meta.correlationId, ip: meta.ip,
+      });
+      return tenant?.name ?? "";
+    });
+    sendLater(deps, log, {
+      to: input.email,
+      subject: "Convite para uma equipe — Reparo360",
+      text: `Olá.\n\nA assistência ${name || "uma assistência"} tentou convidar este e-mail para a equipe no Reparo360, mas ele já tem uma conta. Nenhuma alteração foi feita na sua conta. Se quiser participar dessa equipe, combine com a assistência por outro meio.\n\nSe não esperava este aviso, ignore a mensagem.`,
+    });
+    return { userId: null };
   }
   // O token só existe aqui e no e-mail: nunca volta na resposta da API.
   if (token) {
@@ -99,7 +117,7 @@ export async function createMember(deps: AppServices, auth: AuthContext, input: 
       text: `Olá, ${input.name}.\n\nVocê foi convidado(a) para a equipe de ${tenantName || "uma assistência"} como ${input.role}. Para definir a sua senha e entrar, abra o link (vale por ${INVITE_TTL_MS / 3_600_000} horas e só pode ser usado uma vez):\n\n${passwordLink(deps, token)}\n\nSe não esperava este convite, ignore a mensagem.`,
     });
   }
-  return { userId };
+  return { userId: invite ? null : userId };
 }
 
 export interface UpdateMemberInput {

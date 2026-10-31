@@ -16,6 +16,8 @@ export function teamRoutes(deps: AppServices) {
     app.post("/team/members", { preHandler: guard }, async (request, reply) => {
       const body = createMemberBody.parse(request.body);
       const created = await createMember(deps, requireContext(request), body, metaOf(request), request.log);
+      // Convite por e-mail: 202 e o mesmo corpo exista ou não conta com o e-mail. Cadastro com senha: 201 com o id.
+      if (body.inviteByEmail) return reply.code(202).send({ accepted: true });
       return reply.code(201).send({ userId: created.userId });
     });
 
