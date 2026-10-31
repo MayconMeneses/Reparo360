@@ -8,6 +8,8 @@ export interface AuthContext {
   role: TenantRole;
   csrfToken: string;
   lastAuthAt: Date;
+  /** Conta com senha temporária: só pode trocar a senha ou sair. */
+  mustChangePassword: boolean;
 }
 
 declare module "fastify" {

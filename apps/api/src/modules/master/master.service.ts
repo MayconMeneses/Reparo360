@@ -4,9 +4,10 @@ import { recordAudit } from "../../audit.js";
 import { HttpError } from "../../http-error.js";
 import { verifyPassword } from "../../security/password.js";
 import { accountKey } from "../../security/throttle.js";
+import { randomBytes } from "node:crypto";
 import { hashToken, newToken } from "../../security/tokens.js";
 import type { AppServices } from "../../services.js";
-import type { RequestMeta } from "../identity/auth.service.js";
+import { provisionTenant, type RequestMeta } from "../identity/auth.service.js";
 import { openSecret } from "./secret-box.js";
 import { verifyTotp } from "./totp.js";
 
@@ -135,13 +136,43 @@ export async function listTenants(deps: AppServices, auth: MasterContext) {
   }));
 }
 
+const recentAuthRequired = (deps: AppServices, auth: MasterContext) => {
+  if (deps.clock().getTime() - auth.lastAuthAt.getTime() > deps.config.masterRecentAuthMs) {
+    throw new HttpError(403, "REAUTENTICACAO_NECESSARIA", "Confirme com um novo código do autenticador para continuar.");
+  }
+};
+
+export interface NewTenantInput {
+  tenantName: string;
+  tradeName?: string;
+  phone?: string;
+  ownerName: string;
+  ownerEmail: string;
+}
+
+/**
+ * Cria a assistência e o primeiro proprietário. O Master NÃO escolhe a senha: o servidor gera uma temporária,
+ * mostrada uma única vez, e a conta fica travada até o proprietário definir a própria (sem isso o Master
+ * poderia entrar como ele). A senha nunca vai para log nem auditoria.
+ */
+export async function createTenant(deps: AppServices, auth: MasterContext, input: NewTenantInput, meta: RequestMeta) {
+  recentAuthRequired(deps, auth);
+  const temporaryPassword = randomBytes(15).toString("base64url");
+  const { tenantId, userId } = await provisionTenant(
+    deps, { ...input, ownerPassword: temporaryPassword, mustChangePassword: true }, meta);
+  await withContext(deps.pool, { tenantId }, (db) =>
+    recordAudit(db, {
+      tenantId, actorUserId: auth.adminId, action: "master_tenant_created", targetType: "tenant", targetId: tenantId,
+      outcome: "ok", correlationId: meta.correlationId, ip: meta.ip,
+    }));
+  return { tenantId, ownerId: userId, ownerEmail: input.ownerEmail, temporaryPassword };
+}
+
 /** Suspender/reativar: exige código MFA recente e um motivo, e fica na trilha da própria empresa. */
 export async function setTenantStatus(
   deps: AppServices, auth: MasterContext, tenantId: string, input: { status: "ativa" | "suspensa"; reason: string }, meta: RequestMeta,
 ): Promise<void> {
-  if (deps.clock().getTime() - auth.lastAuthAt.getTime() > deps.config.masterRecentAuthMs) {
-    throw new HttpError(403, "REAUTENTICACAO_NECESSARIA", "Confirme com um novo código do autenticador para continuar.");
-  }
+  recentAuthRequired(deps, auth);
   const result = await deps.pool.query<{ master_set_tenant_status: string }>(
     "SELECT master_set_tenant_status($1, $2, $3, $4, $5, $6, $7)",
     [auth.sessionHash, deps.clock(), tenantId, input.status, input.reason, meta.correlationId, meta.ip]);

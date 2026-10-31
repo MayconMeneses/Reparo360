@@ -65,3 +65,8 @@ Limite: são mutações escolhidas à mão nas travas de concorrência, de decis
 - Teste de proxy mal configurado (`TRUST_PROXY`): NOT_RUN.
 - Testes de carga e de desempenho: NOT_RUN.
 - Teste de penetração por terceiro: NOT_RUN.
+
+## Adendo: senha temporária e criação de empresa pelo Master
+- `master-create.test.ts` (11 testes): exige código recente; o Master não escolhe a senha (campo de senha → 400); e-mail repetido → 409 sem empresa pela metade; senha temporária fora de log, auditoria e banco (só hash Argon2); dono com senha temporária só acessa `/me`, sair e trocar a senha (demais rotas → 403 `TROCA_DE_SENHA_OBRIGATORIA`); troca recusa senha atual errada, nova curta ou igual; troca libera o sistema, invalida a temporária e encerra as outras sessões; contas normais não são afetadas.
+- Mutações (4 de 4 mortas): guarda deixa de bloquear; troca não tira a marca; troca não encerra outras sessões; criar empresa sem código recente.
+- Limites: ver P-46 (o Master conhece a senha temporária até a troca; sem prazo de validade).

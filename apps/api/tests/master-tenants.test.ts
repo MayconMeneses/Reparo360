@@ -144,12 +144,9 @@ describe("suspender e reativar", () => {
 });
 
 describe("não há outro caminho para criar ou ler Master", () => {
-  it("nenhuma rota HTTP cria administrador ou empresa pelo Master", async () => {
-    for (const [url, payload] of [
-      ["/master/admins", { email: "novo@plataforma.invalid", password: "x".repeat(20) }],
-      ["/master/tenants", { name: "Nova", ownerEmail: "o@x.invalid" }],
-    ] as const) {
-      expect((await postJson(env, url, payload, session.cookie, session.csrf)).statusCode, url).toBe(404);
+  it("nenhuma rota HTTP cria administrador do Master", async () => {
+    for (const url of ["/master/admins", "/master/admin", "/master/users"]) {
+      expect((await postJson(env, url, { email: "novo@plataforma.invalid", password: "x".repeat(20) }, session.cookie, session.csrf)).statusCode, url).toBe(404);
     }
   });
 

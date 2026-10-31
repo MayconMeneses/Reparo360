@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "./columns.js";
 
 /** Assistência técnica. O próprio id é o tenant. */
@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  /** Senha temporária (conta criada pelo Master): nada funciona até o usuário definir a própria. */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   status: text("status").notNull().default("ativo"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

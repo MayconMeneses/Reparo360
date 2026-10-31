@@ -5,7 +5,7 @@ import { metaOf } from "../../request-helpers.js";
 import { safeEqual } from "../../security/tokens.js";
 import type { AppServices } from "../../services.js";
 import {
-  listTenants, masterLogout, masterMfaStep, masterPasswordStep, masterReauth, resolveMasterSession, setTenantStatus, type MasterContext,
+  createTenant, listTenants, masterLogout, masterMfaStep, masterPasswordStep, masterReauth, resolveMasterSession, setTenantStatus, type MasterContext,
 } from "./master.service.js";
 
 declare module "fastify" {
@@ -20,6 +20,14 @@ const mfaBody = z.strictObject({ challenge: z.string().min(20).max(100), code: z
 const reauthBody = z.strictObject({ code: z.string().regex(/^\d{6}$/) });
 const tenantParams = z.strictObject({ tenantId: z.uuid() });
 const statusBody = z.strictObject({ status: z.enum(["ativa", "suspensa"]), reason: z.string().trim().min(5).max(300) });
+
+const newTenantBody = z.strictObject({
+  tenantName: z.string().trim().min(2).max(120),
+  tradeName: z.string().trim().min(2).max(120).optional(),
+  phone: z.string().trim().min(8).max(30).optional(),
+  ownerName: z.string().trim().min(2).max(120),
+  ownerEmail: email,
+});
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -78,6 +86,11 @@ export function masterRoutes(deps: AppServices) {
 
     app.get("/master/tenants", { preHandler: guard }, async (request, reply) => {
       return noStore(reply).send({ tenants: await listTenants(deps, current(request)) });
+    });
+
+    app.post("/master/tenants", { preHandler: guard }, async (request, reply) => {
+      const created = await createTenant(deps, current(request), newTenantBody.parse(request.body), metaOf(request));
+      return noStore(reply).code(201).send(created);
     });
 
     app.post("/master/tenants/:tenantId/status", { preHandler: guard }, async (request, reply) => {

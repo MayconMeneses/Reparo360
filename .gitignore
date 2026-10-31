@@ -8,3 +8,7 @@ backups/
 *.log
 .DS_Store
 storage*/
+
+# Instalador: registros e controle do servidor local
+instalador/logs/
+instalador/.servidor.pid

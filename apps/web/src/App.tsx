@@ -7,6 +7,7 @@ import { Loading } from "./components/parts";
 import { BenchPage } from "./pages/BenchPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LabelPage } from "./pages/LabelPage";
+import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrderPage } from "./pages/OrderPage";
 import { DevicesPage, QuotesPage } from "./pages/lists";
@@ -47,7 +48,7 @@ function Home() {
 }
 
 export function App() {
-  const { status } = useAuth();
+  const { status, me } = useAuth();
   const { pathname } = useLocation();
   // Sem sessão, qualquer endereço conhecido mostra o login: o título tem de dizer isso.
   useEffect(() => { document.title = status === "anonymous" && isKnownPath(pathname) ? "Entrar — Reparo360" : titleFor(pathname); }, [pathname, status]);
@@ -55,6 +56,7 @@ export function App() {
   if (!isKnownPath(pathname)) return <main style={{ padding: 16 }}><NotFound /></main>;
   if (status === "loading") return <Loading />;
   if (status === "anonymous") return <LoginPage />;
+  if (me?.senhaTemporaria) return <ChangePasswordPage />;
   return (
     <Routes>
       <Route element={<Layout />}>

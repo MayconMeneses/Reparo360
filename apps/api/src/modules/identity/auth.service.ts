@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { schema, withContext } from "@reparo360/database";
 import { tenantCanOperate, type TenantRole, type TenantStatus } from "@reparo360/domain";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import type pg from "pg";
 import { recordAudit } from "../../audit.js";
 import type { AuthContext } from "../../auth-context.js";
@@ -131,6 +131,29 @@ export async function reauthenticate(deps: AuthServiceDeps, auth: AuthContext, p
   if (!ok) throw new HttpError(401, "SENHA_INVALIDA", "Senha incorreta.");
 }
 
+/** Troca a própria senha. Encerra as outras sessões da conta e tira a marca de senha temporária. */
+export async function changePassword(deps: AuthServiceDeps, auth: AuthContext, input: { currentPassword: string; newPassword: string }, meta: RequestMeta): Promise<void> {
+  if (input.newPassword === input.currentPassword) {
+    throw new HttpError(422, "SENHA_IGUAL", "A nova senha precisa ser diferente da atual.");
+  }
+  const newHash = await hashPassword(input.newPassword);
+  const ok = await withContext(deps.pool, { tenantId: auth.tenantId, userId: auth.userId }, async (db) => {
+    const [user] = await db.select({ hash: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.id, auth.userId)).limit(1);
+    const valid = await verifyPassword(user?.hash ?? null, input.currentPassword);
+    if (valid) {
+      await db.update(schema.users).set({ passwordHash: newHash, mustChangePassword: false, updatedAt: new Date() }).where(eq(schema.users.id, auth.userId));
+      await db.update(schema.sessions).set({ revokedAt: new Date() })
+        .where(and(eq(schema.sessions.userId, auth.userId), ne(schema.sessions.id, auth.sessionId), isNull(schema.sessions.revokedAt)));
+    }
+    await recordAudit(db, {
+      tenantId: auth.tenantId, actorUserId: auth.userId, action: "password_changed", outcome: valid ? "ok" : "negado",
+      correlationId: meta.correlationId, ip: meta.ip,
+    });
+    return valid;
+  });
+  if (!ok) throw new HttpError(401, "SENHA_INVALIDA", "Senha atual incorreta.");
+}
+
 export interface ProvisionInput {
   tenantName: string;
   tradeName?: string;
@@ -138,6 +161,8 @@ export interface ProvisionInput {
   ownerName: string;
   ownerEmail: string;
   ownerPassword: string;
+  /** Conta criada pelo Master: a senha dada é temporária. */
+  mustChangePassword?: boolean;
 }
 
 /** Cria empresa, proprietário e vínculo numa única transação: nunca fica empresa pela metade. */
@@ -154,7 +179,7 @@ export async function provisionTenant(deps: AuthServiceDeps, input: ProvisionInp
         adminEmail: input.ownerEmail,
         phone: input.phone,
       });
-      await db.insert(schema.users).values({ id: userId, email: input.ownerEmail, name: input.ownerName, passwordHash });
+      await db.insert(schema.users).values({ id: userId, email: input.ownerEmail, name: input.ownerName, passwordHash, mustChangePassword: input.mustChangePassword ?? false });
       await db.insert(schema.memberships).values({ tenantId, userId, role: "proprietario" });
       await recordAudit(db, {
         tenantId,

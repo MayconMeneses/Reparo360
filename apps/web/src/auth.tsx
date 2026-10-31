@@ -7,6 +7,8 @@ interface Me {
   tenant: { id: string; name: string };
   role: TenantRole;
   csrfToken: string;
+  /** Conta com senha temporária: só a troca de senha está liberada. */
+  senhaTemporaria?: boolean;
 }
 
 interface AuthState {
@@ -16,6 +18,8 @@ interface AuthState {
   can: (permission: Permission) => boolean;
   login: (input: { email: string; password: string; tenantId?: string }) => Promise<void>;
   logout: () => Promise<void>;
+  /** Recarrega /me (depois de trocar a senha temporária). */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -41,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     adopt(await api<Me>("/me"));
   }, [adopt]);
 
+  const refresh = useCallback(async () => { adopt(await api<Me>("/me")); }, [adopt]);
+
   const logout = useCallback(async () => {
     await api("/auth/logout", { method: "POST" }).catch((error: unknown) => {
       if (!(error instanceof ApiError) || error.status !== 401) throw error;
@@ -49,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [adopt]);
 
   const value = useMemo<AuthState>(
-    () => ({ status, me, login, logout, can: (permission) => (me ? hasPermission(me.role, permission) : false) }),
-    [status, me, login, logout],
+    () => ({ status, me, login, logout, refresh, can: (permission) => (me ? hasPermission(me.role, permission) : false) }),
+    [status, me, login, logout, refresh],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

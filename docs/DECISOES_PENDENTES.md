@@ -104,3 +104,11 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-47 | Novo | Acesso de suporte a dados de uma empresa (grant com prazo, escopo e auditoria, SEC-014): não existe. O Master não tem caminho algum aos dados de clientes. |
 | P-48 | Novo | Recuperação do Master: sem códigos de recuperação nem segundo administrador. Se o autenticador se perder, é preciso acesso ao servidor para recadastrar (`MASTER_REENROLL=true pnpm master:create`). |
 | P-49 | Novo | Status `cancelada` (retenção e exclusão de dados) não pode ser definido pelo Master; depende de decisão sobre retenção (LGPD). |
+
+## Criação de empresa pelo Master e instalador (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-46 | **Decidido pelo dono e construído** | O Master cria assistência e proprietário; o servidor gera a senha temporária (mostrada uma vez), a conta fica travada até o proprietário definir a própria senha, e as outras sessões da conta são encerradas na troca. Limite: o Master vê a senha temporária no momento da criação e, até o proprietário trocá-la, poderia entrar como ele (o acesso ficaria na auditoria da empresa e a troca invalidaria a senha que o Master conhece). A senha não tem prazo de validade. Entrega da senha ao proprietário é por fora do sistema. |
+| P-50 | Novo | Instalador local para Windows (`Instalar-Reparo360.exe` + scripts em `instalador/`). Os `.exe` **não são assinados** (aparece o aviso do SmartScreen). É instalação local (`localhost`), não é implantação para a internet (P-01). Não faz backup, não atualiza versões e não desinstala dados. |
+| P-51 | Novo | Pasta do projeto no OneDrive e caminhos longos: o instalador avisa, mas a instalação pode ficar lenta ou falhar com caminhos acima de ~100 caracteres. |

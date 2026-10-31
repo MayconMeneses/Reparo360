@@ -85,6 +85,13 @@
       "when": 1793450496251,
       "tag": "0011_fase6_master",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793452628600,
+      "tag": "0012_fase6_senha_temporaria",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,11 @@ export const loginBody = z.strictObject({
   tenantId: z.uuid().optional(),
 });
 
+export const changePasswordBody = z.strictObject({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: password,
+});
+
 export const reauthBody = z.strictObject({ password: z.string().min(1).max(128) });
 
 export const onboardingBody = z.strictObject({

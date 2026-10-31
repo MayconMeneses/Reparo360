@@ -47,3 +47,7 @@ Pedido do dono: criar o Master. Implementado: migração 0011 (tabelas `platform
 - **NOT_IMPLEMENTED:** criar empresa pelo Master (P-46, depende de decisão), acesso de suporte (P-47), recuperação do Master (P-48).
 - **NOT_RUN:** teste em navegador real da tela `/master`; leitura do QR/URI em aplicativo autenticador real (os códigos foram verificados contra os vetores da RFC, não contra um aplicativo); `MASTER_ENC_KEY` e senha de produção.
 - Sobre o marcador `app.master_op`: é uma variável de sessão ligada pelas funções do Master. O código da aplicação também poderia ligá-la; ela protege contra erro de rota, não contra execução arbitrária de SQL com o papel da aplicação.
+
+## Adendo: criação de empresa pelo Master (P-46) e instalador
+- **P-46 construído** (migração 0012, coluna `must_change_password`; rota `POST /master/tenants`; `POST /auth/change-password`; tela de troca obrigatória; formulário "Criar assistência" em `/master`). Testes e mutações em `SECURITY_TEST_PLAN.md`.
+- **Instalador** em `instalador/` (guia em `instalador/LEIA-ME.md`): `Instalar-Reparo360.exe`, `Iniciar-Reparo360.exe`, `Parar-Reparo360.exe` (lançadores de 5,5 KB compilados com o compilador do Windows a partir de `instalador/launcher/Launcher.cs`) que chamam os scripts PowerShell da pasta.

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { formatDateTime } from "../format";
 import { Message, TextArea, TextField } from "../ui/form";
 import { masterApi, MasterApiError, TENANT_STATUS_LABEL, type TenantRow } from "./masterApi";
+import { NewTenantForm } from "./NewTenantForm";
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
 
@@ -47,6 +48,8 @@ export function TenantsPanel({ onSessionLost }: { onSessionLost: () => void }) {
   }
 
   return (
+    <>
+    <NewTenantForm onCreated={() => void load()} onSessionLost={onSessionLost} />
     <section aria-labelledby="m-tenants">
       <h2 id="m-tenants">Assistências</h2>
       <Message message={notice} />
@@ -91,5 +94,6 @@ export function TenantsPanel({ onSessionLost }: { onSessionLost: () => void }) {
         </form>
       ) : null}
     </section>
+    </>
   );
 }

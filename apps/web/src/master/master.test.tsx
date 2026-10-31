@@ -91,6 +91,29 @@ describe("Master: entrada em duas etapas e painel", () => {
     await waitFor(() => expect(calls.indexOf(reauth!)).toBeLessThan(calls.indexOf(status!)));
   });
 
+  it("criar assistência manda só nome e e-mail (nunca senha) e mostra a senha temporária uma única vez", async () => {
+    const calls: Array<[string, RequestInit]> = [];
+    vi.stubGlobal("fetch", (url: string, init: RequestInit = {}) => {
+      calls.push([url, init]);
+      if (url.endsWith("/master/me")) return json(200, { admin: { name: "Operador", email: "o@p.invalid" }, csrfToken: "csrf-1" });
+      if (url.endsWith("/master/tenants") && init.method === "POST") return json(201, { tenantId: "t", ownerEmail: "dona@t.invalid", temporaryPassword: "Temp-Senha-De-Teste-1" });
+      if (url.endsWith("/master/tenants")) return json(200, { tenants });
+      return Promise.resolve(new Response(null, { status: 204 }));
+    });
+    const { findByRole, getByLabelText, getByRole, findByText, queryByText } = render(<MasterApp />);
+    fireEvent.click(await findByRole("button", { name: "Criar assistência" }));
+    fireEvent.change(getByLabelText("Nome da assistência"), { target: { value: "Assistência Nova" } });
+    fireEvent.change(getByLabelText("Nome do proprietário"), { target: { value: "Dona Nova" } });
+    fireEvent.change(getByLabelText("E-mail do proprietário"), { target: { value: "dona@t.invalid" } });
+    fireEvent.change(getByLabelText(/Código novo/), { target: { value: "123456" } });
+    fireEvent.click(getByRole("button", { name: "Criar" }));
+    await findByText("Temp-Senha-De-Teste-1");
+    const create = calls.find(([url, init]) => url.endsWith("/master/tenants") && init.method === "POST");
+    expect(JSON.parse(String(create?.[1].body))).toEqual({ tenantName: "Assistência Nova", ownerName: "Dona Nova", ownerEmail: "dona@t.invalid" });
+    fireEvent.click(getByRole("button", { name: "Já anotei, fechar" }));
+    expect(queryByText("Temp-Senha-De-Teste-1")).toBeNull();
+  });
+
   it("empresa suspensa oferece Reativar e não mostra dados de cliente em lugar nenhum", async () => {
     stubServer([], true);
     const { findByRole, container } = render(<MasterApp />);

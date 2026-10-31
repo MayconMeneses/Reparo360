@@ -51,13 +51,13 @@ async function resolveSession(deps: GuardDeps, request: FastifyRequest): Promise
       .innerJoin(schema.tenants, eq(schema.tenants.id, schema.memberships.tenantId))
       .where(and(eq(schema.memberships.tenantId, session.tenantId), eq(schema.memberships.userId, session.userId)))
       .limit(1);
-    const [user] = await db.select({ status: schema.users.status }).from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
+    const [user] = await db.select({ status: schema.users.status, mustChange: schema.users.mustChangePassword }).from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
     if (!member || member.status !== "ativo" || user?.status !== "ativo") return null;
     if (!tenantCanOperate(member.tenantStatus as TenantStatus)) return null;
     if (now - session.lastSeenAt.getTime() > LAST_SEEN_REFRESH_MS) {
       await db.update(schema.sessions).set({ lastSeenAt: new Date(now) }).where(eq(schema.sessions.id, session.id));
     }
-    return member.role as TenantRole;
+    return { role: member.role as TenantRole, mustChange: user.mustChange };
   });
   if (!role) throw unauthenticated();
 
@@ -65,9 +65,10 @@ async function resolveSession(deps: GuardDeps, request: FastifyRequest): Promise
     sessionId: session.id,
     userId: session.userId,
     tenantId: session.tenantId,
-    role,
+    role: role.role,
     csrfToken: session.csrfToken,
     lastAuthAt: session.lastAuthAt,
+    mustChangePassword: role.mustChange,
   };
 }
 
@@ -75,7 +76,7 @@ async function resolveSession(deps: GuardDeps, request: FastifyRequest): Promise
  * Cria o preHandler que autentica, valida CSRF em métodos mutáveis e aplica a
  * permissão exigida. A decisão é sempre do servidor; o frontend só reflete.
  */
-export function requireAuth(deps: GuardDeps, options: { permission?: Permission } = {}) {
+export function requireAuth(deps: GuardDeps, options: { permission?: Permission; allowTemporaryPassword?: boolean } = {}) {
   return async function guard(request: FastifyRequest): Promise<void> {
     const auth = await resolveSession(deps, request);
 
@@ -86,6 +87,10 @@ export function requireAuth(deps: GuardDeps, options: { permission?: Permission 
       }
     }
 
+    // Senha temporária: todo o resto do sistema fica fechado até a troca (só /me, sair e trocar a senha passam).
+    if (auth.mustChangePassword && !options.allowTemporaryPassword) {
+      throw new HttpError(403, "TROCA_DE_SENHA_OBRIGATORIA", "Defina uma nova senha para continuar.");
+    }
     const { permission } = options;
     if (permission) {
       if (!hasPermission(auth.role, permission)) {
