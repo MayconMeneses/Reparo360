@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { DataTable, Remote } from "../components/parts";
-import { formatBrl, formatDateTime, QUOTE_STATE_LABEL, ROLE_LABEL } from "../format";
+import { formatBrl, formatDateTime, QUOTE_STATE_LABEL } from "../format";
 import { useApi } from "../useApi";
 
 export function DevicesPage() {
@@ -48,31 +48,6 @@ export function QuotesPage() {
               { header: "Total", render: (r) => formatBrl(r.totalCents) },
               { header: "Válido até", render: (r) => formatDateTime(r.validUntil) },
               { header: "Cliente", render: (r) => r.customerName },
-            ]}
-          />
-        )}
-      </Remote>
-    </>
-  );
-}
-
-export function TeamPage() {
-  const state = useApi<{ members: Array<{ userId: string; name: string; email: string; role: string; status: string }> }>("/team");
-  return (
-    <>
-      <h1>Equipe</h1>
-      <Remote state={state} onRetry={state.reload}>
-        {({ members }) => (
-          <DataTable
-            caption="Membros da equipe"
-            rows={members}
-            rowKey={(r) => r.userId}
-            empty="Nenhum membro."
-            columns={[
-              { header: "Nome", render: (r) => r.name },
-              { header: "E-mail", render: (r) => r.email },
-              { header: "Papel", render: (r) => ROLE_LABEL[r.role] ?? r.role },
-              { header: "Situação", render: (r) => (r.status === "ativo" ? "Ativo" : "Desativado") },
             ]}
           />
         )}

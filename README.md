@@ -9,7 +9,7 @@
 
 O Reparo360 foi concebido para lojas de manutenção de celulares, computadores, notebooks e outros eletrônicos. O objetivo é registrar o que foi recebido, documentar o diagnóstico, apresentar orçamentos versionados e acompanhar cada etapa até a entrega.
 
-- **Equipe:** cadastros de clientes/equipamentos, recebimento, ordens de serviço, diagnóstico, orçamentos, bancada, reparos, testes, entrega, documentos e indicadores.
+- **Equipe:** cadastro de clientes e equipamentos, abertura de ordem de serviço com recebimento e fotos, diagnóstico, orçamento versionado (valores digitados em reais, guardados em centavos inteiros), decisão presencial, reparo, testes finais, entrega, encerramento, documentos em PDF, etiqueta com QR Code, indicadores e gestão da equipe (somente proprietário e gerente, com confirmação de senha).
 - **Consumidor:** link individual com QR Code para acompanhar o estado do serviço pelo navegador, **em modo somente leitura** nesta fase.
 - **Gestão:** permissões por função, trilha de eventos e separação de dados entre empresas.
 - **Evolução:** regras de negócio documentadas, testes automatizados e relatórios das fases de desenvolvimento.
@@ -31,7 +31,9 @@ O Reparo360 foi concebido para lojas de manutenção de celulares, computadores,
 - **Isolamento de dados:** autorização por função e políticas de Row Level Security (RLS) no PostgreSQL, com testes documentados.
 - **Integridade de fluxo:** transições controladas de ordens, eventos auditáveis e tratamento de operações repetidas.
 - **Portal com acesso restrito:** token individual revogável; os relatórios da fase 5 descrevem proteção de dados e limites do acesso público.
-- **Qualidade verificável:** o [relatório da fase 5](docs/reports/FASE-05-RELATORIO.md) registra 323 testes aprovados **na execução documentada**. Isso não significa que a CI ou cada novo commit tenham sido verificados aqui.
+- **Qualidade verificável:** a última execução registrada nos relatórios ([fase 5](docs/reports/FASE-05-RELATORIO.md) e [fase 5B](docs/reports/FASE-05B-TELAS-OPERACAO.md)) teve 340 testes aprovados, mais as verificações de tipos, lint, build, auditoria de dependências e restauração de backup. Isso vale para aquela execução; a CI ainda não foi configurada.
+- **Interface por papel:** as telas e ações mudam conforme a função (proprietário, gerente, atendente, técnico), mas quem decide é sempre o servidor.
+- **Valores em dinheiro:** a pessoa digita em reais; o sistema guarda centavos inteiros para evitar erros de arredondamento e recalcula o total no servidor.
 
 ## Estrutura do repositório
 
@@ -67,7 +69,7 @@ Para testes que usam banco real, prepare antes o PostgreSQL do `docker-compose.y
 ## Limites conhecidos — leia antes de usar
 
 - Aprovação ou recusa remota de orçamento pelo consumidor **não está habilitada**; o portal é somente leitura.
-- Verificações de instalação real do PWA, leitura de QR em aparelho físico, Lighthouse e testes E2E automatizados ainda estão pendentes no relatório da fase 5.
+- Verificações de instalação real do PWA, leitura de QR em aparelho físico, Lighthouse e testes E2E automatizados ainda estão pendentes nos relatórios das fases 5 e 5B. A verificação das telas novas por papel e por tamanho de tela está em andamento.
 - Existem pendências relacionadas a retenção de dados, armazenamento de arquivos, revisão jurídica, recuperação de senha e preparação para piloto.
 - Não há declaração de conformidade formal com LGPD nem recomendação de uso em produção com dados pessoais reais.
 

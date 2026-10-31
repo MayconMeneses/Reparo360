@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Remote } from "../components/parts";
 import { formatDateTime, stateLabel } from "../format";
@@ -19,6 +19,8 @@ import { useApi } from "../useApi";
 export function OrderPage() {
   const { id } = useParams();
   const [tab, setTab] = useState("resumo");
+  // Outra OS abre sempre no Resumo, não na aba da OS anterior.
+  useEffect(() => { setTab("resumo"); }, [id]);
   const state = useApi<OrderDetail>(id ? `/work-orders/${encodeURIComponent(id)}` : null);
 
   return (

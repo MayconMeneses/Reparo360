@@ -8,7 +8,7 @@ Complemento da Fase 5: a interface passa a cobrir o atendimento completo, sem us
 |---|---|---|
 | Typecheck, lint, build | PASS | `pnpm typecheck`, `pnpm lint`, `pnpm build`, saída 0 |
 | Testes de domínio | PASS | 51/51 |
-| Testes do frontend | PASS | 29/29 (dinheiro, ações por papel, formulários, duplicidade, clique duplo, abas, axe) |
+| Testes do frontend | PASS | 34/34 (dinheiro, ações por papel, formulários, duplicidade, clique duplo, abas, equipe, axe) |
 | Testes de banco | PASS | 63/63 |
 | Testes de API | PASS | 197/197 (inclui a nova lista de técnicos) |
 | Limite de linhas | PASS | 167 arquivos, nenhum acima de 300 |
@@ -16,7 +16,7 @@ Complemento da Fase 5: a interface passa a cobrir o atendimento completo, sem us
 | Backup e restauração | PASS | 28 políticas idênticas após restaurar |
 | Ciclo completo no navegador | PASS | ver abaixo |
 
-**Total: 340 testes, 340 passaram.**
+**Total: 345 testes, 345 passaram** (51 + 34 + 63 + 197).
 
 ## O que foi entregue
 - **Cadastro:** busca de clientes, novo cliente (com aviso de duplicidade sem fusão automática e botão "cadastrar mesmo assim"), página do cliente com equipamentos (IMEI validado) e abertura de OS a partir dali.
@@ -46,3 +46,31 @@ Fluxo percorrido pela tela: cliente → equipamento (IMEI inválido recusado com
 
 ## Próximos passos
 Medir as telas novas em 320/768/1920 e por teclado; percorrer atendente e técnico na tela; teste E2E automatizado; depois a Fase 6 (segurança, recuperação e homologação).
+
+## Complemento: verificação por papel, tamanho de tela e teclado
+
+**Medido no navegador** (`http://localhost`, dados sintéticos; medição por código na própria página: rolagem horizontal, alvos de toque, nome acessível e um `h1` por tela):
+
+| Verificação | Resultado |
+|---|---|
+| Proprietário, 11 telas, em **320, 375, 768, 1280 e 1920 px** | sem falhas |
+| Atendente, técnico e gerente, 11 telas, em **375 px** | sem falhas |
+| 9 abas da OS em **320 px** (OS em diagnóstico) | sem falhas |
+| Formulários de **reparo, testes e entrega** em **320 px** (OS nesses estados) | sem falhas |
+| Teclado | link "Ir para o conteúdo" é o primeiro foco; só a aba ativa é tabulável; setas, Home e End movem seleção e foco; painel ligado à aba; regra `:focus-visible` presente |
+
+**Defeitos encontrados nesta verificação e corrigidos**
+- Atendente e técnico abriam telas sem permissão digitando o endereço (mostravam busca misturada com erro, ou página sem título). Criada proteção por rota: mostra "Sem permissão" com título. O servidor já recusava os dados; isto corrige a tela.
+- Link "Cadastrar novo cliente" com 24 px de altura (mínimo 44). Corrigido.
+- Ao trocar de OS, a aba da OS anterior continuava aberta. Agora abre sempre no Resumo.
+- A tela de equipe quebraria depois de 10 minutos (a API exige senha recente). Agora pede a senha.
+
+**Tela de equipe (nova):** cadastrar membro, trocar função e desativar/reativar, só para proprietário e gerente. O gerente não vê ações sobre proprietário, outro gerente nem sobre si mesmo, e só pode criar atendente e técnico. A senha inicial vai no corpo da requisição, nunca na URL.
+
+**Ainda NÃO medido / NOT_RUN**
+- Gerente, atendente e técnico só em 375 px; **não** em 320, 768, 1280 e 1920 px.
+- Contraste **renderizado** (o contraste foi calculado nos tokens, não medido na tela).
+- Navegação por teclado feita por eventos de teclado simulados, **não** com um teclado e leitor de tela reais.
+- Telas de bancada com a câmera (leitura de QR), upload de foto e PWA instalado continuam sem teste em aparelho.
+- Lighthouse e teste E2E automatizado continuam NOT_RUN.
+- Ação "Reprovar testes", "Cancelar", "Revisar orçamento", recusa e "peça indisponível" na tela continuam sem exercício manual.

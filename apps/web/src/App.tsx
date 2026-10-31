@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import type { Permission } from "@reparo360/domain";
+import { useEffect, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "./auth";
 import { Layout } from "./components/Layout";
@@ -8,7 +9,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LabelPage } from "./pages/LabelPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrderPage } from "./pages/OrderPage";
-import { DevicesPage, QuotesPage, TeamPage } from "./pages/lists";
+import { DevicesPage, QuotesPage } from "./pages/lists";
+import { TeamPage } from "./pages/TeamPage";
 import { CustomerDetailPage, CustomerNewPage, CustomersPage } from "./pages/customers";
 import { OrderNewPage } from "./pages/OrderNewPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -21,6 +23,18 @@ function NotFound() {
       <h1>Página não encontrada</h1>
       <p>O endereço que você abriu não existe.</p>
       <p><Link to="/">Voltar ao início</Link></p>
+    </>
+  );
+}
+
+/** Tela sem permissão para o papel atual. O servidor já recusa os dados; isto só evita uma tela quebrada. */
+function Allowed({ permission, children }: { permission: Permission; children: ReactNode }) {
+  const { can } = useAuth();
+  if (can(permission)) return <>{children}</>;
+  return (
+    <>
+      <h1>Sem permissão</h1>
+      <p>Sua função não tem acesso a esta tela. Use o menu para voltar.</p>
     </>
   );
 }
@@ -45,18 +59,18 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
-        <Route path="ordens" element={<OrdersPage />} />
-        <Route path="ordens/nova" element={<OrderNewPage />} />
-        <Route path="ordens/:id" element={<OrderPage />} />
-        <Route path="bancada" element={<BenchPage />} />
-        <Route path="etiqueta/:id" element={<LabelPage />} />
-        <Route path="clientes" element={<CustomersPage />} />
-        <Route path="clientes/novo" element={<CustomerNewPage />} />
-        <Route path="clientes/:id" element={<CustomerDetailPage />} />
-        <Route path="equipamentos" element={<DevicesPage />} />
-        <Route path="orcamentos" element={<QuotesPage />} />
-        <Route path="equipe" element={<TeamPage />} />
-        <Route path="configuracoes" element={<SettingsPage />} />
+        <Route path="ordens" element={<Allowed permission="work_order.read"><OrdersPage /></Allowed>} />
+        <Route path="ordens/nova" element={<Allowed permission="work_order.create"><OrderNewPage /></Allowed>} />
+        <Route path="ordens/:id" element={<Allowed permission="work_order.read"><OrderPage /></Allowed>} />
+        <Route path="bancada" element={<Allowed permission="work_order.claim"><BenchPage /></Allowed>} />
+        <Route path="etiqueta/:id" element={<Allowed permission="document.generate"><LabelPage /></Allowed>} />
+        <Route path="clientes" element={<Allowed permission="customer.read"><CustomersPage /></Allowed>} />
+        <Route path="clientes/novo" element={<Allowed permission="customer.create"><CustomerNewPage /></Allowed>} />
+        <Route path="clientes/:id" element={<Allowed permission="customer.read"><CustomerDetailPage /></Allowed>} />
+        <Route path="equipamentos" element={<Allowed permission="device.read"><DevicesPage /></Allowed>} />
+        <Route path="orcamentos" element={<Allowed permission="quote.read"><QuotesPage /></Allowed>} />
+        <Route path="equipe" element={<Allowed permission="team.manage"><TeamPage /></Allowed>} />
+        <Route path="configuracoes" element={<Allowed permission="tenant.settings.write"><SettingsPage /></Allowed>} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
