@@ -3,6 +3,7 @@ import type { Mail, Mailer } from "../src/mail/mailer.js";
 import { diagnose, orderInDiagnosis, portalLink, sendQuote, type Account, type Session, type TestEnv } from "./helpers.js";
 
 export const SECRET = "segredo-sintetico-de-teste-com-32-caracteres!";
+export const PUBLIC_URL = "https://app.exemplo.invalid";
 export const CUSTOMER_EMAIL = "maria.cliente@teste.invalid";
 
 /** Coletor de e-mails para os testes. Fica fora de `src`: nenhum caminho de produção o instancia. */

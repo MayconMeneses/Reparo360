@@ -4,3 +4,4 @@ export * from "./schema-quotes.js";
 export * from "./schema-bench.js";
 export * from "./schema-portal.js";
 export * from "./schema-master.js";
+export * from "./schema-passwords.js";

@@ -12,4 +12,6 @@ export interface AppServices {
   clock: () => Date;
   loginThrottle: FailureThrottle;
   mailer: Mailer;
+  /** Pedidos de redefinição de senha por IP+e-mail (contagem; acima do limite o envio para, a resposta não muda). */
+  resetThrottle: FailureThrottle;
 }

@@ -44,6 +44,8 @@ Isso gera uma chave nova e troca a senha. É por isso que o acesso ao servidor d
 
 **Onde ficam os dados?** Banco: volume do Docker (`reparo360_pgdata`). Anexos: `%LOCALAPPDATA%\Reparo360\anexos`. Senhas e chaves: arquivo `.env`. **Faça cópia do `.env`** e use `pnpm backup` (banco + anexos, com conferência; `BACKUP_PASSPHRASE=... pnpm backup --encrypt` para cifrar) e leve a pasta `backups\` para outro lugar. Detalhes e limites em `docs/security/BACKUP_RECOVERY.md`.
 
+**E-mail (convite, esqueci minha senha, aprovação do orçamento pelo cliente).** Ficam desligados até você configurar um servidor de e-mail no `.env`: `SMTP_URL`, `MAIL_FROM` e `VERIFICATION_SECRET` (veja `.env.example`). O instalador já grava `PUBLIC_URL` (o endereço usado nos links dos e-mails). Sem envio configurado, o cadastro de membros continua com senha inicial entregue em pessoa.
+
 **Isto serve para colocar na internet?** Não como está. É uma instalação local (`localhost`). Para uso real em rede é preciso HTTPS, hospedagem e backup definidos (decisão P-01 em `docs/DECISOES_PENDENTES.md`).
 
 **Como criar uma assistência (cliente)?** Entre em `/master`, use **Criar assistência**. O sistema gera uma senha temporária mostrada uma vez; o proprietário é obrigado a trocá-la no primeiro acesso.

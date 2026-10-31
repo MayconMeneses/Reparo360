@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../api";
 import { useAuth } from "../auth";
+import { useAuthOptions } from "../authOptions";
 
 interface TenantChoice { id: string; name: string }
 
 export function LoginPage() {
   const { login } = useAuth();
+  const options = useAuthOptions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenants, setTenants] = useState<TenantChoice[]>([]);
@@ -54,6 +56,7 @@ export function LoginPage() {
           <button type="submit" className="primary" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</button>
         </p>
       </form>
+      {options.passwordReset ? <p><a href="/esqueci-senha">Esqueci minha senha</a></p> : null}
     </main>
   );
 }

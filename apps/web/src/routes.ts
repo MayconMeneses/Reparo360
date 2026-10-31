@@ -1,6 +1,6 @@
 /** Endereços que a interface conhece (espelha apps/api/src/web-app.ts). Tudo fora disso é 404. */
 const KNOWN = [
-  /^\/$/, /^\/portal$/, /^\/master$/, /^\/ordens$/, /^\/ordens\/[0-9a-f-]{36}$/, /^\/ordens\/nova$/, /^\/clientes$/, /^\/clientes\/novo$/, /^\/clientes\/[0-9a-f-]{36}$/, /^\/equipamentos$/, /^\/orcamentos$/, /^\/equipe$/, /^\/auditoria$/,
+  /^\/$/, /^\/portal$/, /^\/master$/, /^\/ordens$/, /^\/ordens\/[0-9a-f-]{36}$/, /^\/ordens\/nova$/, /^\/clientes$/, /^\/clientes\/novo$/, /^\/clientes\/[0-9a-f-]{36}$/, /^\/equipamentos$/, /^\/orcamentos$/, /^\/equipe$/, /^\/auditoria$/, /^\/esqueci-senha$/, /^\/redefinir-senha$/,
   /^\/configuracoes$/, /^\/bancada$/, /^\/etiqueta\/[0-9a-f-]{36}$/,
 ];
 export const isKnownPath = (pathname: string): boolean => KNOWN.some((route) => route.test(pathname));

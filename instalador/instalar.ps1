@@ -78,6 +78,7 @@ if ($valores.Count -eq 0) {
         '',
         'HOST=127.0.0.1',
         ('PORT=' + $portaSistema),
+        ('PUBLIC_URL=http://localhost:' + $portaSistema),
         'COOKIE_SECURE=true',
         'ALLOW_PUBLIC_ONBOARDING=false',
         ('STORAGE_DIR=' + $anexos),

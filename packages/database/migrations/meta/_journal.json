@@ -99,6 +99,13 @@
       "when": 1793458001428,
       "tag": "0013_fase6_indice_eventos",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793480374970,
+      "tag": "0014_senha_por_email",
+      "breakpoints": true
     }
   ]
 }

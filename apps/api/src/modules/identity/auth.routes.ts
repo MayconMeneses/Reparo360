@@ -3,11 +3,13 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { HttpError } from "../../http-error.js";
 import { metaOf, requireContext } from "../../request-helpers.js";
-import { requireAuth, sessionCookieName, type GuardDeps } from "../../session-guard.js";
+import type { AppServices } from "../../services.js";
+import { requireAuth, sessionCookieName } from "../../session-guard.js";
 import { changePassword, login, logout, provisionTenant, reauthenticate } from "./auth.service.js";
-import { changePasswordBody, loginBody, onboardingBody, reauthBody } from "./schemas.js";
+import { confirmPasswordReset, requestPasswordReset } from "./password-reset.js";
+import { changePasswordBody, confirmResetBody, loginBody, onboardingBody, reauthBody, requestResetBody } from "./schemas.js";
 
-export function authRoutes(deps: GuardDeps) {
+export function authRoutes(deps: AppServices) {
   const cookieName = sessionCookieName(deps.config);
   const guard = requireAuth(deps);
   // Estas rotas continuam abertas para quem ainda usa senha temporária.
@@ -41,6 +43,23 @@ export function authRoutes(deps: GuardDeps) {
       });
       return reply.send({ csrfToken: result.csrfToken, tenant: result.tenant, role: result.role });
     });
+
+    // Público. Resposta idêntica exista ou não a conta (e com o limite atingido ou o envio desligado): ver password-reset.ts.
+    app.post("/auth/password-reset/request", { config: attemptLimit }, async (request, reply) => {
+      const { email } = requestResetBody.parse(request.body);
+      await requestPasswordReset(deps, email, metaOf(request), request.log);
+      return reply.code(202).header("cache-control", "no-store").send({ accepted: true });
+    });
+
+    app.post("/auth/password-reset/confirm", { config: attemptLimit }, async (request, reply) => {
+      const body = confirmResetBody.parse(request.body);
+      await confirmPasswordReset(deps, body.token, body.newPassword, metaOf(request));
+      return reply.code(204).header("cache-control", "no-store").send();
+    });
+
+    /** A tela de entrada só mostra "Esqueci minha senha" quando o envio de e-mail está ligado. */
+    app.get("/auth/options", async (_request, reply) =>
+      reply.header("cache-control", "no-store").send({ passwordReset: deps.mailer.enabled && Boolean(deps.config.publicUrl) }));
 
     app.post("/auth/logout", { preHandler: guardTemporary }, async (request, reply) => {
       await logout(deps, requireContext(request), metaOf(request));

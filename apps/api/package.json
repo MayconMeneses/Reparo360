@@ -8,6 +8,7 @@
     "master:create": "tsx --env-file=../../.env src/cli/create-master.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "e2e": "playwright test",
     "build": "node build.mjs"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.10.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.7",

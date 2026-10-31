@@ -23,11 +23,14 @@ const baseEnvSchema = z.object({
   /** Chave do HMAC dos códigos de verificação. Obrigatória quando há envio de e-mail. */
   VERIFICATION_SECRET: z.string().min(32).optional(),
   /** Chave (64 hex = 256 bits) que cifra o segredo MFA do Master. Sem ela, as rotas do Master ficam desligadas. */
+  /** Endereço público do sistema (https://…), usado para montar links de e-mail. NUNCA vem da requisição. */
+  PUBLIC_URL: z.url().optional(),
   MASTER_ENC_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, "64 caracteres hexadecimais").optional(),
 });
 
 const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   if (env.SMTP_URL && !env.MAIL_FROM) ctx.addIssue({ code: "custom", path: ["MAIL_FROM"], message: "obrigatório com SMTP_URL" });
+  if (env.SMTP_URL && !env.PUBLIC_URL) ctx.addIssue({ code: "custom", path: ["PUBLIC_URL"], message: "obrigatório com SMTP_URL (endereço público do sistema)" });
   if (env.SMTP_URL && !env.VERIFICATION_SECRET) ctx.addIssue({ code: "custom", path: ["VERIFICATION_SECRET"], message: "obrigatório com SMTP_URL (mínimo 32 caracteres)" });
 });
 
@@ -50,6 +53,7 @@ export interface Config {
   smtpUrl?: string;
   mailFrom?: string;
   verificationSecret?: string;
+  publicUrl?: string;
   /** Master: ligado só com chave de cifragem. Prazos mais curtos que os da empresa (proposta, P-45). */
   masterEncKey?: Buffer;
   masterSessionTtlMs: number;
@@ -89,6 +93,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     smtpUrl: parsed.SMTP_URL,
     mailFrom: parsed.MAIL_FROM,
     verificationSecret: parsed.VERIFICATION_SECRET,
+    publicUrl: parsed.PUBLIC_URL?.replace(/\/+$/, ""),
     masterEncKey: parsed.MASTER_ENC_KEY ? Buffer.from(parsed.MASTER_ENC_KEY, "hex") : undefined,
     masterSessionTtlMs: 4 * 60 * 60 * 1000,
     masterIdleMs: 30 * 60 * 1000,

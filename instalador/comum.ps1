@@ -75,10 +75,16 @@ function Garantir-Docker([bool]$silencioso) {
         Falhar 'Docker não encontrado. Instale o Docker Desktop (https://www.docker.com/products/docker-desktop) e rode este instalador de novo.'
     }
     if (Docker-Pronto) { Ok 'Docker está rodando'; return }
-    $executavel = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
-    if ((Test-Path $executavel) -and -not (Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue)) {
+    # O Docker Desktop pode estar instalado para todos os usuários (Program Files) ou só para este (AppData).
+    $candidatos = @(
+        (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Docker\Docker\Docker Desktop.exe')
+    )
+    $executavel = $candidatos | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($executavel -and -not (Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue)) {
         Aviso 'Abrindo o Docker Desktop (pode levar alguns minutos)...'
-        Start-Process -FilePath $executavel
+        Start-Process -FilePath $executavel -WorkingDirectory (Split-Path $executavel)
     }
     if (-not (Esperar-Ate { Docker-Pronto } 240 'o Docker ficar pronto')) {
         Falhar 'O Docker não ficou pronto. Abra o Docker Desktop, espere ele terminar de iniciar e rode de novo.'

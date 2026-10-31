@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Registra o service worker só em produção. Falha de registro não afeta o uso do sistema. */
 export function UpdateBanner() {
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
+  // A página só recarrega quando a PESSOA pede a atualização. Na primeira visita o service worker assume o controle
+  // sozinho (controllerchange) e recarregar aí apagaria o que a pessoa já estivesse digitando, por exemplo o login.
+  const updateRequested = useRef(false);
 
   useEffect(() => {
     if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
     let reloading = false;
     const onControllerChange = () => {
-      if (reloading) return;
+      if (!updateRequested.current || reloading) return;
       reloading = true;
       window.location.reload();
     };
@@ -34,7 +37,7 @@ export function UpdateBanner() {
   return (
     <div role="status" className="card" style={{ position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 480, zIndex: 20 }}>
       <p style={{ marginTop: 0 }}>Há uma nova versão do Reparo360.</p>
-      <button type="button" className="primary" onClick={() => waiting.postMessage("SKIP_WAITING")}>Atualizar agora</button>{" "}
+      <button type="button" className="primary" onClick={() => { updateRequested.current = true; waiting.postMessage("SKIP_WAITING"); }}>Atualizar agora</button>{" "}
       <button type="button" onClick={() => setWaiting(null)}>Depois</button>
     </div>
   );

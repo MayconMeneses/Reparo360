@@ -100,3 +100,9 @@ Nota de processo: o histórico do Git foi reescrito uma vez para trocar o e-mail
 - **Lacuna do MVP encontrada e fechada:** os eventos de auditoria eram gravados, mas não havia como consultá-los (RF-023). Agora existe `GET /audit` (proprietário e gerente; filtros por ação, resultado e período; paginação; sem IP, sem ID de correlação e sem ID de ator) e a tela **Auditoria**. 8 testes na API, 4 na interface; 4 mutações mortas (permissão, rótulo da plataforma, "há mais páginas", filtro de período).
 - **Matriz de rastreio** requisito → implementação → teste → estado em `docs/product/RASTREABILIDADE.md`, que deixa explícito o que está PARCIAL (convite por e-mail, aprovação remota sem provedor real, QR em aparelho, PWA instalado, N+1, WCAG, backup não automatizado).
 - Totais depois deste adendo: domínio 51, interface 49, API 320, banco 70 = **490 passando**; typecheck, lint, tamanho de arquivo, build, `pnpm audit` e `--prod` limpos.
+
+## Adendo: recuperação de senha, convite por e-mail e testes de navegador
+- Construídos: recuperação de senha (`/esqueci-senha`, `/redefinir-senha`), convite de membro por e-mail, `PUBLIC_URL` obrigatório com envio de e-mail, migração 0014 (tokens só acessíveis por funções do banco). Detalhes e mutações em `SECURITY_TEST_PLAN.md`.
+- Testes de navegador (Playwright + Chromium, opcionais, também no CI): 5 testes em 3 arquivos, todos passando. **Defeito real encontrado e corrigido:** na primeira visita o service worker assumia o controle e a página recarregava sozinha, apagando o login que a pessoa já tivesse digitado.
+- Também encontrado: o instalador não achava o Docker Desktop instalado só para o usuário (`%LOCALAPPDATA%`); corrigido.
+- Números: domínio 51, interface 55, banco 73, API 346 = **525 passando**, mais 5 testes de navegador; typecheck, lint, tamanho de arquivo, build, `pnpm audit` (e `--prod`) e gitleaks limpos.

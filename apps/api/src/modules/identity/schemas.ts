@@ -28,12 +28,21 @@ export const onboardingBody = z.strictObject({
   ownerPassword: password,
 });
 
-export const createMemberBody = z.strictObject({
-  name: z.string().trim().min(2).max(120),
-  email,
-  password,
-  role: z.enum(TENANT_ROLES),
-});
+/** Senha inicial definida por quem cadastra OU convite por e-mail (a pessoa define a própria senha): nunca os dois. */
+export const createMemberBody = z
+  .strictObject({
+    name: z.string().trim().min(2).max(120),
+    email,
+    password: password.optional(),
+    inviteByEmail: z.literal(true).optional(),
+    role: z.enum(TENANT_ROLES),
+  })
+  .refine((value) => (value.password === undefined) !== (value.inviteByEmail === undefined), {
+    message: "Informe a senha inicial OU escolha o convite por e-mail.",
+  });
+
+export const requestResetBody = z.strictObject({ email });
+export const confirmResetBody = z.strictObject({ token: z.string().min(20).max(100), newPassword: password });
 
 export const updateMemberBody = z
   .strictObject({

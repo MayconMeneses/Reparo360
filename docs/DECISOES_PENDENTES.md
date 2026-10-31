@@ -146,3 +146,13 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-06, P-41 | **Adiados pelo dono** | Parte jurídica (política de privacidade, termos, prazos de comunicação de incidente): não será tratada agora. |
 | P-14 | **Adiado pelo dono** | Metas de backup (RPO/RTO): não definidas agora. |
 | — | Registro | Restauração de uma única empresa a partir do backup: não construída (não pedida). |
+
+## Recuperação de senha e convite por e-mail (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-21 | **Atendido** | Recuperação de senha por e-mail construída e testada (sem provedor real). Depende de `SMTP_URL`, `MAIL_FROM`, `VERIFICATION_SECRET` e `PUBLIC_URL`; sem eles fica desligada. |
+| P-18 | **Atendido** | Convite de membro por e-mail (a pessoa define a própria senha; quem convida nunca vê senha nem link). Senha inicial entregue em pessoa continua como alternativa. |
+| P-19 | **Não tratado** | Cadastro de membro e de assistência ainda responde 409 quando o e-mail já existe (revela a existência da conta a quem cadastra). Na recuperação de senha essa revelação foi eliminada. |
+| P-54 | Novo | Prazos propostos: link de redefinição 30 min; convite 72 h; até 3 pedidos de redefinição por conta por hora. Não validados com o dono. |
+| P-55 | Novo | Sem auditoria do *pedido* de redefinição (só da troca concluída); sem aviso por e-mail ao dono da conta quando a senha é trocada. |

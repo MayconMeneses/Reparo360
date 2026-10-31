@@ -1,12 +1,15 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { schema, withContext } from "@reparo360/database";
 import { canManageMember, type TenantRole } from "@reparo360/domain";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { recordAudit } from "../../audit.js";
 import type { AuthContext } from "../../auth-context.js";
 import { HttpError, isUniqueViolation } from "../../http-error.js";
 import { hashPassword } from "../../security/password.js";
+import { hashToken, newToken } from "../../security/tokens.js";
+import type { AppServices } from "../../services.js";
 import type { AuthServiceDeps, RequestMeta } from "../identity/auth.service.js";
+import { INVITE_TTL_MS, passwordLink, sendLater, type MailLog } from "../identity/password-reset.js";
 
 export interface TeamMember {
   userId: string;
@@ -39,26 +42,44 @@ export async function listMembers(deps: AuthServiceDeps, auth: AuthContext): Pro
 export interface CreateMemberInput {
   name: string;
   email: string;
-  password: string;
+  /** Senha inicial definida por quem cadastra. Ausente quando `inviteByEmail` é verdadeiro. */
+  password?: string;
+  /** Convite por e-mail: a pessoa define a própria senha; quem convida nunca vê nem escolhe senha. */
+  inviteByEmail?: true;
   role: TenantRole;
 }
 
 /**
- * Cria a conta do novo membro com senha inicial definida por quem cadastra.
- * Provisório: o convite por e-mail depende da decisão P-03 (canal de envio).
+ * Cria a conta do novo membro: com senha inicial definida por quem cadastra, OU por convite por e-mail
+ * (conta nasce travada com senha aleatória que ninguém conhece; o link do e-mail é o único caminho).
+ * Se o e-mail já existe no sistema, a resposta é a mesma de sempre (409): ninguém recebe link por iniciativa de outra assistência.
  */
-export async function createMember(deps: AuthServiceDeps, auth: AuthContext, input: CreateMemberInput, meta: RequestMeta) {
+export async function createMember(deps: AppServices, auth: AuthContext, input: CreateMemberInput, meta: RequestMeta, log: MailLog) {
   if (!canManageMember(auth.role, input.role, input.role)) throw forbidden();
+  const invite = input.inviteByEmail === true;
+  if (invite && (!deps.mailer.enabled || !deps.config.publicUrl)) {
+    throw new HttpError(422, "ENVIO_INDISPONIVEL", "O convite por e-mail não está disponível: o envio de e-mail não está configurado. Cadastre com senha inicial.");
+  }
   const userId = randomUUID();
-  const passwordHash = await hashPassword(input.password);
+  const passwordHash = await hashPassword(invite ? randomBytes(32).toString("base64url") : (input.password ?? ""));
+  const token = invite ? newToken() : null;
+  let tenantName = "";
   try {
     await withContext(deps.pool, { tenantId: auth.tenantId, userId: auth.userId }, async (db) => {
-      await db.insert(schema.users).values({ id: userId, email: input.email, name: input.name, passwordHash });
+      await db.insert(schema.users).values({ id: userId, email: input.email, name: input.name, passwordHash, mustChangePassword: invite });
       await db.insert(schema.memberships).values({ tenantId: auth.tenantId, userId, role: input.role });
+      if (token) {
+        const now = deps.clock();
+        const [tenant] = await db.select({ name: schema.tenants.name }).from(schema.tenants).where(eq(schema.tenants.id, auth.tenantId)).limit(1);
+        tenantName = tenant?.name ?? "";
+        const issued = await db.execute<{ pw_token_invite: boolean }>(
+          sql`SELECT pw_token_invite(${userId}::uuid, ${hashToken(token)}, ${new Date(now.getTime() + INVITE_TTL_MS).toISOString()}::timestamptz, ${now.toISOString()}::timestamptz)`);
+        if (!issued.rows[0]?.pw_token_invite) throw new Error("convite não emitido");
+      }
       await recordAudit(db, {
         tenantId: auth.tenantId,
         actorUserId: auth.userId,
-        action: "team_member_created",
+        action: invite ? "team_member_invited" : "team_member_created",
         targetType: "user",
         targetId: userId,
         outcome: "ok",
@@ -69,6 +90,14 @@ export async function createMember(deps: AuthServiceDeps, auth: AuthContext, inp
   } catch (error) {
     if (isUniqueViolation(error)) throw new HttpError(409, "EMAIL_JA_CADASTRADO", "Este e-mail já está cadastrado.");
     throw error;
+  }
+  // O token só existe aqui e no e-mail: nunca volta na resposta da API.
+  if (token) {
+    sendLater(deps, log, {
+      to: input.email,
+      subject: `Convite para ${tenantName || "a assistência"} — Reparo360`,
+      text: `Olá, ${input.name}.\n\nVocê foi convidado(a) para a equipe de ${tenantName || "uma assistência"} como ${input.role}. Para definir a sua senha e entrar, abra o link (vale por ${INVITE_TTL_MS / 3_600_000} horas e só pode ser usado uma vez):\n\n${passwordLink(deps, token)}\n\nSe não esperava este convite, ignore a mensagem.`,
+    });
   }
   return { userId };
 }

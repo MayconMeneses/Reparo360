@@ -16,3 +16,7 @@ instalador/.servidor.pid
 # Saídas geradas pelo vitest
 .vitest/
 
+
+# Testes de navegador (Playwright)
+playwright-report/
+test-results/

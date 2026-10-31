@@ -8,8 +8,8 @@ Os números e o resultado de execução estão em `docs/reports/FASE-06-RELATORI
 | ID | Implementação | Testes | Estado | Limite |
 |---|---|---|---|---|
 | RF-001 Cadastro com proprietário | `modules/identity` (`provisionTenant`), `modules/master` (criar assistência) | `auth.test.ts`, `master-create.test.ts` | PASS | O cadastro público vem desligado; o caminho normal é o Master |
-| RF-002 Login, sessão opaca, logout | `modules/identity`, `session-guard.ts` | `auth.test.ts`, `isolation.test.ts` (reautenticação), `hardening.test.ts` | PASS | |
-| RF-003 Gerir equipe | `modules/team` | `isolation.test.ts`, `web: pages/team.test.tsx` | PARCIAL | "Convidar" é senha inicial entregue em pessoa; convite por e-mail (P-18) não foi feito |
+| RF-002 Login, sessão opaca, logout, recuperação de senha | `modules/identity`, `session-guard.ts`, `password-reset.ts` | `auth.test.ts`, `isolation.test.ts` (reautenticação), `hardening.test.ts`, `password-reset.test.ts`, `e2e/senha.spec.ts` (navegador) | PASS | A recuperação por e-mail não foi testada com provedor real |
+| RF-003 Gerir equipe | `modules/team`, `modules/identity/password-reset.ts` (convite) | `isolation.test.ts`, `password-invite.test.ts`, `web: pages/team.test.tsx`, `password-pages.test.tsx` | PASS | O convite por e-mail só funciona com o envio de e-mail configurado e **não foi testado com provedor real**; sem ele, vale a senha inicial entregue em pessoa |
 | RF-004 Clientes, busca e duplicidade | `modules/customers` | `customers-devices.test.ts` | PASS | |
 | RF-005 Equipamentos do cliente | `modules/devices` | `customers-devices.test.ts` | PASS | |
 | RF-006 Recebimento (defeito, estado, acessórios, checklist, fotos) | `modules/work-orders`, `modules/attachments` | `work-orders.test.ts`, `attachments.test.ts`, `packages/database/tests/integrity.test.ts` | PASS | A senha do aparelho nunca é guardada (só a marca "informada") |
@@ -47,6 +47,9 @@ Os números e o resultado de execução estão em `docs/reports/FASE-06-RELATORI
 
 A matriz própria, com os testes e as mutações, está em `docs/security/SECURITY_TEST_PLAN.md`.
 
+## Testes de navegador (Playwright, Chromium)
+`apps/api/e2e/*.spec.ts`, fora do `pnpm test` (rodar: `pnpm build` e depois `pnpm --filter @reparo360/api e2e`; também roda no CI). Cobrem, num navegador de verdade: entrada, cadastro de cliente e equipamento, abertura de OS, lista e auditoria, sair, página 404 (`assistencia.spec.ts`); Master em duas etapas, criar assistência, troca obrigatória da senha temporária, suspender e reativar (`master.spec.ts`); esqueci minha senha de ponta a ponta com o link do e-mail e uso único do link (`senha.spec.ts`). O primeiro roteiro encontrou um defeito real do sistema (o recarregamento da página na primeira visita apagava o que a pessoa digitava no login), já corrigido; reintroduzido de propósito, o roteiro volta a falhar. **Só Chromium**, só um tamanho de tela; não cobrem celular, outros navegadores nem a instalação do PWA.
+
 ## Lacunas conhecidas deste rastreio
 - O rastreio cobre os requisitos do PRD (RF-001 a RF-023 e RNF-001 a RNF-007). Os 30 critérios de aceite da especificação mestra não estão neste repositório e, portanto, não foram cruzados aqui.
-- Não houve teste de ponta a ponta em navegador real (Playwright ou equivalente) nem teste de carga.
+- Não houve teste de carga. Os testes de navegador cobrem três fluxos, não todas as telas.

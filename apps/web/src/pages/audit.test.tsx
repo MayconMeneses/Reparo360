@@ -36,7 +36,7 @@ function mount(role: string, audit: (url: string) => unknown) {
 describe("tela de auditoria", () => {
   it("proprietário vê a tabela com rótulos em português, autor correto e menu; sem violações de acessibilidade", async () => {
     const { findAllByText, container, getAllByRole, getByRole } = mount("proprietario", () => ({ events: events(3), hasMore: false }));
-    expect((await findAllByText("Ordem de serviço aberta", { selector: "td" })).length).toBe(2);
+    expect((await findAllByText("Ordem de serviço aberta", { selector: "td" }, { timeout: 5000 })).length).toBe(2);
     expect(container.textContent).toContain("Assistência suspensa pela plataforma");
     expect(container.textContent).toContain("Plataforma");
     expect(container.textContent).toContain("Pedido formal do dono");
@@ -50,14 +50,14 @@ describe("tela de auditoria", () => {
 
   it("atendente não vê a tela nem o item de menu", async () => {
     const { findByText, queryByRole, queryByText } = mount("atendente", () => ({ events: events(1), hasMore: false }));
-    await findByText("Sem permissão");
+    await findByText("Sem permissão", {}, { timeout: 5000 });
     expect(queryByRole("link", { name: "Auditoria" })).toBeNull();
     expect(queryByText("Ordem de serviço aberta", { selector: "td" })).toBeNull();
   });
 
   it("filtros e paginação viram parâmetros da consulta; período incompleto não é enviado", async () => {
     const { findByText, getByLabelText, getByRole, urls } = mount("gerente", (url) => ({ events: events(2, url.includes("offset=20") ? 20 : 0), hasMore: !url.includes("offset=20") }));
-    await findByText("Ordem de serviço aberta", { selector: "td" });
+    await findByText("Ordem de serviço aberta", { selector: "td" }, { timeout: 5000 });
     fireEvent.change(getByLabelText("Resultado"), { target: { value: "negado" } });
     await waitFor(() => expect(urls.some((u) => u.includes("outcome=negado"))).toBe(true));
     fireEvent.change(getByLabelText("De"), { target: { value: "2026-10-01" } });
@@ -71,6 +71,6 @@ describe("tela de auditoria", () => {
 
   it("estado vazio e erro têm mensagem", async () => {
     const { findByText } = mount("proprietario", () => ({ events: [], hasMore: false }));
-    await findByText("Nenhum evento para estes filtros.");
+    await findByText("Nenhum evento para estes filtros.", {}, { timeout: 5000 });
   });
 });

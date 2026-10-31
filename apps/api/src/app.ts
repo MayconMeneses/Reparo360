@@ -149,8 +149,10 @@ export async function buildApp({ config, pool, storage, clock, mailer, logStream
     }
   });
 
-  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000), mailer: mailer ?? createMailer(config) };
+  const deps: AppServices = { config, pool, storage: storage ?? new LocalDiskStorage(config.storageDir), clock: clock ?? (() => new Date()), loginThrottle: new FailureThrottle(config.loginAccountMaxFailures, 15 * 60 * 1000), mailer: mailer ?? createMailer(config), resetThrottle: new FailureThrottle(5, 15 * 60 * 1000, () => (clock ?? (() => new Date()))().getTime()) };
   if (deps.mailer.enabled && !config.verificationSecret) throw new Error("VERIFICATION_SECRET é obrigatório quando o envio de e-mail está ligado");
+  // O link de redefinição/convite é montado só com esta configuração, nunca com o cabeçalho Host da requisição.
+  if (deps.mailer.enabled && !config.publicUrl) throw new Error("PUBLIC_URL é obrigatório quando o envio de e-mail está ligado");
   await app.register(authRoutes(deps), { prefix: "/api/v1" });
   if (config.masterEncKey) await app.register(masterRoutes(deps), { prefix: "/api/v1" });
   await app.register(teamRoutes(deps), { prefix: "/api/v1" });

@@ -4,7 +4,7 @@ import {
   loginOk, onboard, orderDetail, portalRead, resetData, startTestEnv,
   type Account, type Session, type TestEnv,
 } from "./helpers.js";
-import { awaitingApproval as awaiting, CUSTOMER_EMAIL, MemoryMailer, portalDecide, portalRequestCode, SECRET } from "./remote-helpers.js";
+import { awaitingApproval as awaiting, CUSTOMER_EMAIL, MemoryMailer, portalDecide, portalRequestCode, PUBLIC_URL, SECRET } from "./remote-helpers.js";
 
 let env: TestEnv;
 let mailer: MemoryMailer;
@@ -15,7 +15,7 @@ const logLines: string[] = [];
 
 beforeAll(async () => {
   mailer = new MemoryMailer();
-  env = await startTestEnv({ LOG_LEVEL: "info", VERIFICATION_SECRET: SECRET, PORTAL_RATE_LIMIT_MAX: "1000" }, () => now, { write: (chunk: string) => void logLines.push(chunk) }, mailer);
+  env = await startTestEnv({ LOG_LEVEL: "info", VERIFICATION_SECRET: SECRET, PUBLIC_URL: PUBLIC_URL, PORTAL_RATE_LIMIT_MAX: "1000" }, () => now, { write: (chunk: string) => void logLines.push(chunk) }, mailer);
 });
 afterAll(async () => {
   await env.close();
