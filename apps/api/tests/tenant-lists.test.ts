@@ -100,3 +100,28 @@ describe("lista de orçamentos", () => {
     expect((await setupOrder(env, ownerB)).orderId).toBeTruthy();
   });
 });
+
+describe("lista de técnicos para atribuição", () => {
+  it("traz só técnicos ativos (id e nome), para quem abre OS; sem e-mail; sem outras empresas", async () => {
+    const tech = await addMember(env, ownerA, "tecnico", "ana");
+    await addMember(env, ownerA, "tecnico", "bia");
+    await addMember(env, ownerA, "atendente", "caio");
+    const otherTech = await addMember(env, ownerB, "tecnico", "so-da-b");
+    const clerk = await loginOk(env, (await addMember(env, ownerA, "atendente", "balcao")).email);
+    const res = await call(env, clerk, "GET", "/technicians");
+    expect(res.statusCode).toBe(200);
+    const list = res.json<{ technicians: Array<{ id: string; name: string }> }>().technicians;
+    expect(list.map((t) => t.name)).toEqual(["Membro ana", "Membro bia"]);
+    expect(Object.keys(list[0] ?? {}).sort()).toEqual(["id", "name"]);
+    expect(list.map((t) => t.id)).not.toContain(otherTech.userId);
+    // Desativar tira da lista.
+    await call(env, ownerA, "PATCH", `/team/members/${tech.userId}`, { status: "desativado" });
+    expect((await call(env, clerk, "GET", "/technicians")).json().technicians).toHaveLength(1);
+  });
+
+  it("técnico e anônimo não acessam", async () => {
+    const tech = await loginOk(env, (await addMember(env, ownerA, "tecnico", "solo")).email);
+    expect((await call(env, tech, "GET", "/technicians")).statusCode).toBe(403);
+    expect((await call(env, null, "GET", "/technicians")).statusCode).toBe(401);
+  });
+});

@@ -1,58 +1,7 @@
 import { Link } from "react-router-dom";
 import { DataTable, Remote } from "../components/parts";
-import { formatBrl, formatDateTime, QUOTE_STATE_LABEL, ROLE_LABEL, stateLabel } from "../format";
+import { formatBrl, formatDateTime, QUOTE_STATE_LABEL, ROLE_LABEL } from "../format";
 import { useApi } from "../useApi";
-
-export function OrdersPage() {
-  const state = useApi<{ workOrders: Array<{ id: string; protocol: string; state: string; priority: string; customerName: string; device: { brand: string; model: string }; createdAt: string }> }>("/work-orders?limit=50");
-  return (
-    <>
-      <h1>Ordens de serviço</h1>
-      <Remote state={state} onRetry={state.reload}>
-        {({ workOrders }) => (
-          <DataTable
-            caption="Ordens de serviço mais recentes"
-            rows={workOrders}
-            rowKey={(r) => r.id}
-            empty="Nenhuma ordem de serviço ainda."
-            columns={[
-              { header: "Protocolo", render: (r) => <Link to={`/ordens/${r.id}`}>{r.protocol}</Link> },
-              { header: "Situação", render: (r) => <span className="badge">{stateLabel(r.state)}</span> },
-              { header: "Cliente", render: (r) => r.customerName },
-              { header: "Equipamento", render: (r) => `${r.device.brand} ${r.device.model}` },
-              { header: "Aberta em", render: (r) => formatDateTime(r.createdAt) },
-            ]}
-          />
-        )}
-      </Remote>
-    </>
-  );
-}
-
-export function CustomersPage() {
-  const state = useApi<{ customers: Array<{ id: string; name: string; phone: string; email: string | null; createdAt: string }> }>("/customers?limit=50");
-  return (
-    <>
-      <h1>Clientes</h1>
-      <Remote state={state} onRetry={state.reload}>
-        {({ customers }) => (
-          <DataTable
-            caption="Clientes cadastrados"
-            rows={customers}
-            rowKey={(r) => r.id}
-            empty="Nenhum cliente cadastrado."
-            columns={[
-              { header: "Nome", render: (r) => r.name },
-              { header: "Telefone", render: (r) => r.phone },
-              { header: "E-mail", render: (r) => r.email ?? "—" },
-              { header: "Cadastro", render: (r) => formatDateTime(r.createdAt) },
-            ]}
-          />
-        )}
-      </Remote>
-    </>
-  );
-}
 
 export function DevicesPage() {
   const state = useApi<{ devices: Array<{ id: string; category: string; brand: string; model: string; serialNumber: string | null; customerName: string }> }>("/devices?limit=50");

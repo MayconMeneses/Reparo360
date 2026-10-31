@@ -40,3 +40,15 @@ export function tokenFromHash(hash: string): string | null {
   const match = /^#t=([A-Za-z0-9_-]{20,100})$/.exec(hash);
   return match?.[1] ?? null;
 }
+
+/** Telefone nacional em dígitos para a máscara de exibição. */
+export function formatPhone(digits: string): string {
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return digits;
+}
+
+export const CATEGORY_OPTIONS = [
+  { value: "celular", label: "Celular" }, { value: "tablet", label: "Tablet" }, { value: "notebook", label: "Notebook" },
+  { value: "computador", label: "Computador" }, { value: "console", label: "Videogame / console" }, { value: "outro", label: "Outro" },
+] as const;

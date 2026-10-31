@@ -22,6 +22,7 @@ import { listRoutes } from "./modules/lists/lists.routes.js";
 import { portalRoutes } from "./modules/portal/portal.js";
 import { quoteRoutes } from "./modules/quotes/quotes.routes.js";
 import { tenantRoutes } from "./modules/tenant/tenant.routes.js";
+import { technicianRoutes } from "./modules/team/technicians.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { workOrderRoutes } from "./modules/work-orders/work-orders.routes.js";
 import type { AppServices } from "./services.js";
@@ -122,6 +123,7 @@ export async function buildApp({ config, pool, storage, clock, logStream }: AppD
   await app.register(deliveryRoutes(deps), { prefix: "/api/v1" });
   await app.register(tenantRoutes(deps), { prefix: "/api/v1" });
   await app.register(listRoutes(deps), { prefix: "/api/v1" });
+  await app.register(technicianRoutes(deps), { prefix: "/api/v1" });
   await app.register(dashboardRoutes(deps), { prefix: "/api/v1" });
   await app.register(portalRoutes(deps), { prefix: "/api/v1" });
   return app;
