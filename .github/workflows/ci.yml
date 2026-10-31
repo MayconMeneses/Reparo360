@@ -94,6 +94,17 @@ jobs:
       # Imagem fixada pelo digest verificado na máquina de desenvolvimento.
       - name: gitleaks
         run: |
+          # safe.directory: o Git dentro do contêiner recusa um repositório de outro dono ("dubious ownership").
+          # A saída vai também para uma anotação, porque os logs do GitHub exigem login para serem lidos.
+          set +e
           docker run --rm -v "$PWD:/repo:ro" \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
             zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
-            git /repo -c /repo/.gitleaks.toml --no-banner --redact
+            git /repo -c /repo/.gitleaks.toml --no-banner --redact > gitleaks.log 2>&1
+          code=$?
+          cat gitleaks.log
+          if [ "$code" -ne 0 ]; then
+            msg=$(head -c 1500 gitleaks.log | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=gitleaks falhou::${msg}"
+          fi
+          exit "$code"

@@ -36,6 +36,8 @@ describe("senha temporária no primeiro acesso", () => {
       calls.push([url, init]);
       if (url.endsWith("/auth/change-password")) { temporary = false; return Promise.resolve(new Response(null, { status: 204 })); }
       if (url.endsWith("/me")) return json(200, me(temporary));
+      // Depois da troca o app abre o Dashboard: precisa de uma resposta no formato real (antes `{}` quebrava a tela).
+      if (url.includes("/dashboard")) return json(200, { period: { from: "2026-10-01", to: "2026-10-31", timezone: "America/Sao_Paulo", startUtc: "", endExclusiveUtc: "" }, generatedAt: "2026-10-31T12:00:00Z", indicators: [] });
       return json(200, {});
     });
     const { findByLabelText, getByLabelText, getByRole, findByRole } = mount();
