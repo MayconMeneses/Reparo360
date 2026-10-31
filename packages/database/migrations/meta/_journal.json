@@ -92,6 +92,13 @@
       "when": 1793452628600,
       "tag": "0012_fase6_senha_temporaria",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793458001428,
+      "tag": "0013_fase6_indice_eventos",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,13 @@
+# Configuração do gitleaks. Mantém as regras padrão e libera SÓ valores sintéticos dentro de arquivos de teste
+# (senhas fictícias, chave fixa de teste, semente pública da RFC 6238). Segredo em qualquer outro lugar continua sendo apontado.
+title = "Reparo360"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Valores sintéticos em testes (nenhum é segredo real)"
+condition = "AND"
+paths = ['''(^|/)apps/(api|web)/(tests|src)/.*\.test\.tsx?$''', '''(^|/)apps/api/tests/[^/]+\.ts$''']
+regexTarget = "line"
+regexes = ['''(?i)(senha|password|idempotency-key|MASTER_KEY_HEX|secret=)''']

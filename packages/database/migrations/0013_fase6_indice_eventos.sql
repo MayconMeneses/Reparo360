@@ -1,0 +1,1 @@
+CREATE INDEX "events_tenant_created_idx" ON "work_order_events" USING btree ("tenant_id","created_at");

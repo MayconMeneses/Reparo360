@@ -172,6 +172,8 @@ export const workOrderEvents = pgTable(
   (t) => [
     foreignKey({ name: "events_work_order_fk", columns: [t.tenantId, t.workOrderId], foreignColumns: [workOrders.tenantId, workOrders.id] }),
     index("events_work_order_idx").on(t.tenantId, t.workOrderId, t.createdAt),
+    // Apoia o dashboard: eventos da empresa por período.
+    index("events_tenant_created_idx").on(t.tenantId, t.createdAt),
     check("events_actor_ck", sql`${t.actorUserId} is not null or ${t.type} = 'orcamento_expirado' or (${t.origin} = 'cliente' and ${t.type} in ('orcamento_aprovado', 'orcamento_recusado'))`),
     check("events_origin_ck", sql`${t.origin} in ('equipe', 'sistema', 'cliente') and (${t.origin} <> 'cliente' or (${t.actorUserId} is null and ${t.type} in ('orcamento_aprovado', 'orcamento_recusado')))`),
   ],

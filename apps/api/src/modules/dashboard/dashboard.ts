@@ -1,6 +1,6 @@
 import { schema, withContext } from "@reparo360/database";
 import { computeStageDurations, OPEN_STATES, type StateEvent, type WorkOrderState } from "@reparo360/domain";
-import { and, asc, count, eq, gte, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { HttpError } from "../../http-error.js";
@@ -76,10 +76,18 @@ export async function buildDashboard(deps: AppServices, auth: { tenantId: string
       .where(and(tenant, ne(wo.state, "CANCELADA"), gte(wo.createdAt, start), lt(wo.createdAt, end)))
       .groupBy(schema.devices.category);
 
+    // Só interessam as OS com alguma mudança de etapa DENTRO do período: uma passagem só conta quando termina
+    // no período, e isso exige um evento de saída nele. As demais OS não geram amostra, então ficam de fora
+    // (resultado idêntico ao de ler todo o histórico, com muito menos linhas). Das OS escolhidas vem o histórico inteiro.
+    const e = schema.workOrderEvents;
+    const touchedInPeriod = db
+      .selectDistinct({ id: e.workOrderId })
+      .from(e)
+      .where(and(eq(e.tenantId, auth.tenantId), sql`${e.toState} is not null`, gte(e.createdAt, start), lt(e.createdAt, end)));
     const stateEvents = await db
       .select({ workOrderId: schema.workOrderEvents.workOrderId, fromState: schema.workOrderEvents.fromState, toState: schema.workOrderEvents.toState, at: schema.workOrderEvents.createdAt })
       .from(schema.workOrderEvents)
-      .where(and(eq(schema.workOrderEvents.tenantId, auth.tenantId), sql`${schema.workOrderEvents.toState} is not null`))
+      .where(and(eq(e.tenantId, auth.tenantId), sql`${e.toState} is not null`, inArray(e.workOrderId, touchedInPeriod)))
       .orderBy(asc(schema.workOrderEvents.workOrderId), asc(schema.workOrderEvents.createdAt), asc(schema.workOrderEvents.id))
       .limit(MAX_STATE_EVENTS + 1);
     if (stateEvents.length > MAX_STATE_EVENTS) throw new HttpError(422, "HISTORICO_GRANDE_DEMAIS", "Histórico grande demais para este cálculo. Reduza o período.");

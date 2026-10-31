@@ -1,0 +1,99 @@
+name: CI
+
+# Roda a cada push e pull request em main. Só leitura do repositório; nenhum segredo é usado:
+# todas as senhas abaixo são fictícias e existem só dentro desta execução descartável.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Qualidade (tipos, lint, build, testes, auditoria)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Valores fictícios, apenas para o banco descartável desta execução.
+      POSTGRES_SUPERUSER_PASSWORD: ci-superuser-sintetico-1
+      MIGRATOR_PASSWORD: ci-migrator-sintetico-1
+      APP_PASSWORD: ci-app-sintetico-1
+      POSTGRES_PORT: "54329"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # O mesmo docker-compose do desenvolvimento: cria os papéis (migrador e aplicação sem BYPASSRLS) pelo initdb.
+      - name: Arquivo .env fictício
+        run: |
+          {
+            echo "POSTGRES_SUPERUSER_PASSWORD=$POSTGRES_SUPERUSER_PASSWORD"
+            echo "MIGRATOR_PASSWORD=$MIGRATOR_PASSWORD"
+            echo "APP_PASSWORD=$APP_PASSWORD"
+            echo "POSTGRES_PORT=$POSTGRES_PORT"
+            echo "DATABASE_URL=postgres://reparo_app:$APP_PASSWORD@127.0.0.1:$POSTGRES_PORT/reparo360_dev"
+            echo "MIGRATION_DATABASE_URL=postgres://reparo_migrator:$MIGRATOR_PASSWORD@127.0.0.1:$POSTGRES_PORT/reparo360_dev"
+            echo "TEST_DATABASE_URL=postgres://reparo_app:$APP_PASSWORD@127.0.0.1:$POSTGRES_PORT/reparo360_test"
+            echo "TEST_MIGRATION_DATABASE_URL=postgres://reparo_migrator:$MIGRATOR_PASSWORD@127.0.0.1:$POSTGRES_PORT/reparo360_test"
+            echo "COOKIE_SECURE=true"
+            echo "ALLOW_PUBLIC_ONBOARDING=false"
+            echo "STORAGE_DIR=$RUNNER_TEMP/anexos"
+          } > .env
+
+      - name: Subir o PostgreSQL
+        run: |
+          docker compose up -d
+          for _ in $(seq 1 60); do
+            docker compose exec -T postgres pg_isready -U postgres && exit 0
+            sleep 2
+          done
+          docker compose logs postgres
+          exit 1
+
+      - run: pnpm db:migrate
+      - run: pnpm db:migrate --test
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm loc:check
+      - run: pnpm build
+      - run: pnpm test
+
+      - name: Auditoria de dependências
+        run: |
+          pnpm audit --prod
+          pnpm audit
+
+      - name: Logs do banco em caso de falha
+        if: failure()
+        run: docker compose logs --tail=100 postgres
+
+  segredos:
+    name: Varredura de segredos (histórico completo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Imagem fixada pelo digest verificado na máquina de desenvolvimento.
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" \
+            zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git /repo -c /repo/.gitleaks.toml --no-banner --redact

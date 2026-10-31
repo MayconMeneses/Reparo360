@@ -112,3 +112,13 @@ Itens abaixo dependem do dono do produto, jurídico ou comercial. Não foram ass
 | P-46 | **Decidido pelo dono e construído** | O Master cria assistência e proprietário; o servidor gera a senha temporária (mostrada uma vez), a conta fica travada até o proprietário definir a própria senha, e as outras sessões da conta são encerradas na troca. Limite: o Master vê a senha temporária no momento da criação e, até o proprietário trocá-la, poderia entrar como ele (o acesso ficaria na auditoria da empresa e a troca invalidaria a senha que o Master conhece). A senha não tem prazo de validade. Entrega da senha ao proprietário é por fora do sistema. |
 | P-50 | Novo | Instalador local para Windows (`Instalar-Reparo360.exe` + scripts em `instalador/`). Os `.exe` **não são assinados** (aparece o aviso do SmartScreen). É instalação local (`localhost`), não é implantação para a internet (P-01). Não faz backup, não atualiza versões e não desinstala dados. |
 | P-51 | Novo | Pasta do projeto no OneDrive e caminhos longos: o instalador avisa, mas a instalação pode ficar lenta ou falhar com caminhos acima de ~100 caracteres. |
+
+## Fechamento da Fase 6 (2026-10-31)
+
+| ID | Situação | Observação |
+|---|---|---|
+| P-35 | **Atendido em parte** | O dashboard agora lê só o histórico das OS com mudança de etapa no período e o limite de 200 mil eventos deixou de ser atingido por empresas maduras. No pior caso (todo o histórico dentro do período) continua ~1 s por consulta e o limite de 200 mil eventos ainda vale. Medido com 30 mil OS e 120 mil eventos, uma empresa, esta máquina. Não é promessa de capacidade. |
+| P-39 | **Escrito, não executado** | `.github/workflows/ci.yml` (tipos, lint, tamanho, build, testes com PostgreSQL, `pnpm audit`, gitleaks) e `codeql.yml`, validados com o `actionlint`. Só rodam no GitHub depois do envio; o CodeQL depende de "Code scanning" habilitado no repositório. Nenhuma configuração do repositório foi alterada. |
+| P-40 | **Atendido em parte** | Backup completo com anexos e verificação por SHA-256 (`pnpm backup` / `pnpm backup:verify`). Faltam: criptografia, cópia externa/agendamento, retenção e restauração por empresa. |
+| P-52 | Novo | DAST (ZAP) contra o servidor local: não executado. Precisa baixar uma imagem grande e montar a varredura autenticada; decidir se vale a pena antes de hospedar (P-01). |
+| P-53 | Novo | As ações do GitHub estão fixadas por tag de versão (`@v4`), não por SHA de commit; fixar por SHA é mais seguro contra troca de tag. |

@@ -51,3 +51,38 @@ Pedido do dono: criar o Master. Implementado: migração 0011 (tabelas `platform
 ## Adendo: criação de empresa pelo Master (P-46) e instalador
 - **P-46 construído** (migração 0012, coluna `must_change_password`; rota `POST /master/tenants`; `POST /auth/change-password`; tela de troca obrigatória; formulário "Criar assistência" em `/master`). Testes e mutações em `SECURITY_TEST_PLAN.md`.
 - **Instalador** em `instalador/` (guia em `instalador/LEIA-ME.md`): `Instalar-Reparo360.exe`, `Iniciar-Reparo360.exe`, `Parar-Reparo360.exe` (lançadores de 5,5 KB compilados com o compilador do Windows a partir de `instalador/launcher/Launcher.cs`) que chamam os scripts PowerShell da pasta.
+
+## Fechamento: segredos, backup com anexos, proxy, CI e desempenho
+| Item | Estado | Evidência |
+|---|---|---|
+| Scanner de segredos (gitleaks) | PASS (com ressalvas) | histórico de 14 commits: 14 achados, todos valores sintéticos de teste; `.gitleaks.toml` libera só isso; controle negativo pega segredo plantado em código de produção. Só o histórico do Git foi varrido |
+| Backup com anexos | PASS (com ressalvas) | `pnpm backup` / `pnpm backup:verify`; 6 testes + 4 mutações mortas. Sem criptografia, sem cópia externa; restauração só do banco inteiro (por empresa: NOT_IMPLEMENTED) |
+| Proxy mal configurado (TRUST_PROXY) | PASS | 4 testes (`proxy.test.ts`) |
+| Pipeline de CI | **NOT_RUN** | `ci.yml` e `codeql.yml` escritos e validados com `actionlint`; só executam no GitHub depois do envio |
+| Desempenho | PASS (medido, com defeito corrigido) | tabela abaixo |
+| DAST (ZAP) | **NOT_RUN** | P-52 |
+
+### Desempenho (scripts/perf-measure.mjs)
+Condições: uma empresa com 20 mil clientes, 20 mil equipamentos, 30 mil OS e 120 mil eventos; PostgreSQL 17.6 em Docker no mesmo computador do desenvolvimento (que também rodava outras coisas); API compilada; 60 chamadas em série por endpoint e 16 simultâneas. **Vale para esta máquina e este volume; não é promessa de capacidade.**
+
+| Endpoint | p50 | p95 | 16 simultâneas (total) |
+|---|---|---|---|
+| clientes, página 1 | 41 ms | 115 ms | 382 ms |
+| clientes, busca por nome (com resultado) | 75 ms | 277 ms | 328 ms |
+| clientes, busca por nome (sem resultado) | 65 ms | 806 ms (máx. 3,3 s) | 585 ms |
+| clientes, busca por telefone | 75 ms | 200 ms | 307 ms |
+| OS, página 1 | 98 ms | 191 ms | 496 ms |
+| OS, filtro por estado | 32 ms | 46 ms | 165 ms |
+| OS, busca por protocolo | 59 ms | 101 ms | 250 ms |
+| equipamentos, busca | 86 ms | 107 ms | 432 ms |
+| dashboard (antes da correção, todo o histórico no período) | 976 ms | 1868 ms | 11,4 s |
+
+- Os picos de p95/máx. (por exemplo 3,3 s em uma chamada) podem ser ruído da máquina; não repeti a medição para separar ruído de problema.
+- Planos: a busca por nome com `ILIKE '%…%'` usa o índice por data e filtra (rápida quando há resultado); **sem resultado, varre a tabela inteira de clientes da empresa** (20 mil linhas, ~270 páginas). A busca por protocolo em prefixo também varre a tabela. Em volumes bem maiores pedem um índice de trigramas (extensão `pg_trgm`), **não feito** (decisão: só se a medição real justificar).
+- **Defeito corrigido:** o dashboard lia todo o histórico de eventos da empresa e dava erro 422 acima de 200 mil eventos. Agora lê só as OS com mudança de etapa dentro do período (resultado idêntico, provado por testes com datas deslocadas) e há um índice novo `(empresa, data)` nos eventos. Empresa madura (OS espalhadas por ~2 anos, período padrão de 30 dias): p50 **950 ms → 132 ms**, p95 1429 → 403 ms, 16 simultâneas **10,9 s → 1,5 s**. **Pior caso** (todo o histórico dentro do período, ou período de 1 ano) **não melhora**: ~1 s por consulta e o limite de 200 mil eventos continua valendo.
+
+### Gates finais (2026-10-31)
+typecheck, lint, build, loc:check, `pnpm audit` e `--prod`: limpos. Testes: domínio 51, web 45, API 307, banco 70 = **473 passando**; `backup:check` PASS.
+
+### Fase 6: estado
+**Continua NÃO aprovada para produção.** Pendentes: execução do CI no GitHub (P-39), DAST (P-52), criptografia/cópia externa do backup e restauração por empresa (P-40), acesso de suporte e recuperação do Master (P-47, P-48), hospedagem/HTTPS/criptografia em repouso (P-01) e as decisões jurídicas (P-06, P-41).

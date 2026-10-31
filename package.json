@@ -13,6 +13,8 @@
     "db:migrate": "pnpm --filter @reparo360/database db:migrate",
     "loc:check": "node scripts/check-file-size.mjs",
     "master:create": "pnpm --filter @reparo360/api master:create",
+    "backup": "node scripts/backup.mjs",
+    "backup:verify": "node scripts/restore-verify.mjs",
     "backup:check": "node scripts/backup-restore-check.mjs"
   },
   "devDependencies": {

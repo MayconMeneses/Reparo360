@@ -1,0 +1,31 @@
+name: CodeQL
+
+# Análise estática de segurança. ATENÇÃO: o envio dos resultados exige "Code scanning" habilitado no repositório
+# (gratuito em repositório público; em privado depende do plano). Se falhar por isso, é configuração do GitHub, não do código.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analisar:
+    name: CodeQL (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
