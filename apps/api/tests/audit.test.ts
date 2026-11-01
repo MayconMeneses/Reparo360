@@ -93,7 +93,8 @@ describe("auditoria consultável (RF-023)", () => {
     const denied = (await list(ownerA, "?outcome=negado")).body!.events;
     expect(denied.length).toBeGreaterThan(0);
     expect(denied.every((e) => e.outcome === "negado")).toBe(true);
-    const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+    // Dia de São Paulo (UTC-03:00 fixo, como a API): em UTC, depois das 21h de Brasília o "hoje" já seria o dia seguinte.
+    const day = (offset: number) => new Date(Date.now() - 3 * 3_600_000 + offset * 86_400_000).toISOString().slice(0, 10);
     expect((await list(ownerA, `?from=${day(0)}&to=${day(0)}`)).body!.events.length).toBeGreaterThan(0);
     expect((await list(ownerA, `?from=${day(1)}&to=${day(2)}`)).body!.events).toEqual([]);
     expect((await list(ownerA, `?from=${day(-3)}&to=${day(-2)}`)).body!.events).toEqual([]);

@@ -27,7 +27,8 @@ function sql(statement: string) {
   if (res.status !== 0) throw new Error(res.stderr);
 }
 
-const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+// Dia de São Paulo (UTC-03:00 fixo, como a API): em UTC, depois das 21h de Brasília o "hoje" já seria o dia seguinte.
+const day = (offset: number) => new Date(Date.now() - 3 * 3_600_000 + offset * 86_400_000).toISOString().slice(0, 10);
 type Stage = { state: string; samples: number; medianSeconds: number };
 async function stages(from: string, to: string): Promise<Record<string, Stage>> {
   const res = await call(env, owner, "GET", `/dashboard?from=${from}&to=${to}`);
