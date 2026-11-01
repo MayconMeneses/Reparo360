@@ -14,6 +14,29 @@ O Reparo360 foi concebido para lojas de manutenção de celulares, computadores,
 - **Gestão:** permissões por função, trilha de eventos e separação de dados entre empresas.
 - **Evolução:** regras de negócio documentadas, testes automatizados e relatórios das fases de desenvolvimento.
 
+## Veja funcionando
+
+Capturas de tela de uma assistência de demonstração (todos os dados são fictícios), geradas com `scripts/demo-seed.mjs`.
+
+| | |
+| --- | --- |
+| ![Dashboard com indicadores e ordens por estado](docs/img/02-dashboard.png) **Dashboard:** indicadores e ordens por estado | ![Lista de ordens de serviço em etapas diferentes](docs/img/04-ordens.png) **Ordens de serviço** em cada etapa do fluxo |
+| ![Detalhe de uma ordem, com abas de recebimento, diagnóstico, orçamento, reparo, testes e entrega](docs/img/05-ordem.png) **Ordem:** recebimento, diagnóstico, orçamento, reparo, testes e entrega | ![Bancada do técnico com as ordens atribuídas e a fila](docs/img/03-bancada.png) **Bancada** do técnico e fila sem técnico |
+| ![Auditoria consultável com filtros](docs/img/07-auditoria.png) **Auditoria** consultável, sem IP nem identificadores internos | ![Lista de ordens no celular](docs/img/08-celular.png) **Celular:** a interface se adapta à tela do celular |
+
+### Roteiro de demonstração (uns 5 minutos)
+
+1. **Subir o sistema** com o Docker: `instalador/LEIA-ME.md` (Windows, por `.exe`) ou a seção de desenvolvimento abaixo. A API serve a interface quando `WEB_DIST` aponta para `apps/web/dist`.
+2. **Criar uma assistência de demonstração** em `/master` (**Criar assistência**: o Master gera uma senha temporária, mostrada uma vez, e o proprietário é obrigado a trocá-la no primeiro acesso). Para uma demo rápida, também dá para iniciar a API com `ALLOW_PUBLIC_ONBOARDING=true` e cadastrar a assistência por `POST /api/v1/tenants`; **não deixe isso ligado fora do seu computador**.
+3. **Carregar dados fictícios** (5 clientes, 5 ordens em etapas diferentes e um técnico):
+
+   ```bash
+   DEMO_EMAIL=<e-mail do proprietário> DEMO_PASSWORD=<senha dele> node scripts/demo-seed.mjs
+   ```
+
+4. **Percorrer:** Dashboard → Ordens (cada etapa do fluxo) → uma ordem (abas de recebimento a entrega, orçamento versionado, PDF e etiqueta com QR Code) → Bancada → Equipe (papéis e permissões) → Auditoria.
+5. **Mostrar o isolamento:** crie uma segunda assistência e confirme que ela não enxerga nada da primeira (a regra está no banco, por Row Level Security, e é coberta por testes).
+
 ## Tecnologias
 
 | Camada | Tecnologias |
@@ -57,7 +80,7 @@ docs/
   reports/       Evidências e limites de cada fase
 infra/          Ambiente local (PostgreSQL em Docker)
 instalador/     Instalador e scripts de uso local (Windows)
-scripts/        Backup, verificação de restauração e medições
+scripts/        Backup, verificação de restauração, medições e dados de demonstração
 ```
 
 ## Executar verificações em ambiente de desenvolvimento
