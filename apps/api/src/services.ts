@@ -14,4 +14,6 @@ export interface AppServices {
   mailer: Mailer;
   /** Pedidos de redefinição de senha por IP+e-mail (contagem; acima do limite o envio para, a resposta não muda). */
   resetThrottle: FailureThrottle;
+  /** Convites por e-mail por assistência (contagem por hora): evita usar o convite para disparar e-mails a terceiros. */
+  inviteThrottle: FailureThrottle;
 }

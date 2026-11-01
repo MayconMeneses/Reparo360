@@ -35,7 +35,7 @@ O Reparo360 foi concebido para lojas de manutenção de celulares, computadores,
 - **Testes de navegador:** roteiros em Chromium (Playwright) para entrada, cadastro, ordem de serviço, Master e recuperação de senha.
 - **Auditoria consultável:** proprietário e gerente veem quem fez o quê (sem IP nem identificadores internos), com filtros e paginação.
 - **Administração da plataforma (Master):** área separada, com senha e segundo fator (TOTP); lista, suspende e reativa assistências e cria novas com senha temporária de troca obrigatória. Não tem acesso a dados de clientes.
-- **Qualidade verificável:** testes automatizados contra PostgreSQL real (529 na última execução local, em 2026-10-31, mais 5 testes de navegador), tipos, lint, limite de tamanho de arquivo, build, auditoria de dependências, varredura de segredos (gitleaks) e CodeQL, executados no GitHub Actions a cada envio. Resultado de uma execução não é garantia de ausência de defeitos.
+- **Qualidade verificável:** testes automatizados contra PostgreSQL real (530 na última execução local, em 2026-10-31, mais 5 testes de navegador), tipos, lint, limite de tamanho de arquivo, build, auditoria de dependências, varredura de segredos (gitleaks) e CodeQL, executados no GitHub Actions a cada envio. Resultado de uma execução não é garantia de ausência de defeitos.
 - **Backup verificável:** backup de banco e anexos, com conferência por SHA-256, opção de cifragem e prova de restauração em banco descartável.
 - **Instalação local no Windows:** `Instalar-Reparo360.exe` (guia em `instalador/LEIA-ME.md`). Os executáveis não são assinados digitalmente.
 - **Interface por papel:** as telas e ações mudam conforme a função (proprietário, gerente, atendente, técnico), mas quem decide é sempre o servidor.

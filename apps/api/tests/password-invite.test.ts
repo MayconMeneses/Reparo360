@@ -127,6 +127,23 @@ describe("convite de membro por e-mail", () => {
     expect(events.every((e) => e.targetId === null && e.targetType === "user" && e.outcome === "ok")).toBe(true);
   });
 
+  it("limite de volume: 30 convites por hora por assistência (novos ou para e-mails existentes); depois a hora vira e libera", async () => {
+    const other = await onboard(env, "convE");
+    for (let i = 0; i < 30; i++) {
+      const res = await invite({ email: i % 5 === 0 ? other.email : `lote${i}@teste.invalid` });
+      expect(res.statusCode, `convite ${i + 1}`).toBe(202);
+    }
+    const over = await invite({ email: "excedente@teste.invalid" });
+    expect(over.statusCode).toBe(429);
+    expect(over.json().error.code).toBe("MUITOS_CONVITES");
+    const none = await env.migrator.query("SELECT count(*)::int AS n FROM users WHERE email = 'excedente@teste.invalid'");
+    expect(none.rows[0].n).toBe(0);
+    now = new Date(now.getTime() + 61 * 60_000);
+    expect((await invite({ email: "depois@teste.invalid" })).statusCode).toBe(202);
+    // Os e-mails saem depois da resposta: espera todos (30 convites + 1) para não vazarem para o teste seguinte.
+    expect(await mailCount(31)).toBe(31);
+  }, 120_000);
+
   it("cadastro com senha inicial continua devolvendo 409 quando o e-mail existe (quem cadastra escolheu a senha)", async () => {
     const other = await onboard(env, "convD");
     const res = await call(env, owner, "POST", "/team/members", { name: "Fulana", email: other.email, password: "senha-inicial-123", role: "atendente" });

@@ -60,6 +60,12 @@ export async function createMember(deps: AppServices, auth: AuthContext, input: 
   if (invite && (!deps.mailer.enabled || !deps.config.publicUrl)) {
     throw new HttpError(422, "ENVIO_INDISPONIVEL", "O convite por e-mail não está disponível: o envio de e-mail não está configurado. Cadastre com senha inicial.");
   }
+  if (invite) {
+    // Limite de volume por assistência: conta todo convite (conta nova ou já existente) e responde igual ao passar do limite.
+    const key = `invite|${auth.tenantId}`;
+    if (deps.inviteThrottle.isBlocked(key)) throw new HttpError(429, "MUITOS_CONVITES", "Muitos convites em pouco tempo. Tente de novo mais tarde.");
+    deps.inviteThrottle.fail(key);
+  }
   const userId = randomUUID();
   const passwordHash = await hashPassword(invite ? randomBytes(32).toString("base64url") : (input.password ?? ""));
   const token = invite ? newToken() : null;
