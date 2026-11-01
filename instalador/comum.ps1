@@ -119,13 +119,22 @@ function Iniciar-Servidor([hashtable]$config) {
     $entrada = Join-Path $script:Raiz 'apps\api\dist\server.js'
     if (-not (Test-Path $entrada)) { Falhar 'O sistema ainda não foi compilado. Rode o instalador.' }
     $porta = if ($config.ContainsKey('PORT')) { $config['PORT'] } else { '3000' }
+    # Outro programa na mesma porta responderia ao /health no lugar do Reparo360 e o script daria "rodando" sem estar.
+    $emUso = Get-NetTCPConnection -LocalPort ([int]$porta) -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($emUso) {
+        $dono = Get-Process -Id $emUso.OwningProcess -ErrorAction SilentlyContinue
+        $nome = if ($dono) { $dono.ProcessName } else { 'desconhecido' }
+        Falhar ('A porta ' + $porta + ' já está em uso por outro programa (' + $nome + '). Feche esse programa ou troque PORT e PUBLIC_URL no arquivo .env (por exemplo, para 4310) e rode de novo.')
+    }
     $saida = Join-Path $script:PastaLogs 'servidor.log'
     $erros = Join-Path $script:PastaLogs 'servidor-erros.log'
     $processo = Start-Process -FilePath 'node' -ArgumentList @('--env-file=.env', 'apps/api/dist/server.js') `
         -WorkingDirectory $script:Raiz -WindowStyle Hidden -PassThru -RedirectStandardOutput $saida -RedirectStandardError $erros
     Set-Content -Path $script:ArquivoPid -Value $processo.Id -Encoding ASCII
     $endereco = 'http://127.0.0.1:' + $porta + '/health'
-    $subiu = Esperar-Ate { (Invoke-WebRequest -Uri $endereco -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200 } 60 'o sistema responder'
+    # Só vale se o processo que iniciei continua vivo: se ele caiu, quem responde no /health é outro programa.
+    $subiu = Esperar-Ate { (-not $processo.HasExited) -and ((Invoke-WebRequest -Uri $endereco -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200) } 60 'o sistema responder'
+    if ($processo.HasExited) { Falhar ('O sistema encerrou ao iniciar. Veja ' + $erros) }
     if (-not $subiu) { Falhar ('O sistema não respondeu. Veja ' + $erros) }
     Ok ('Sistema rodando em http://localhost:' + $porta)
 }
